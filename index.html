@@ -128,7 +128,7 @@
     #panel {
       position: fixed;
       top: 50px; right: 0; bottom: 0;
-      width: 380px;
+      width: 456px;
       background: rgba(8,8,22,0.75);
       border-left: 1px solid rgba(255,255,255,0.06);
       backdrop-filter: blur(30px);
@@ -142,7 +142,7 @@
     }
     #panel.open { transform: translateX(0); }
 
-    #panel-inner { padding: 28px 24px 60px; }
+    #panel-inner { padding: 34px 29px 72px; }
 
     #btn-close {
       position: absolute;
@@ -160,28 +160,28 @@
     #btn-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
     #p-cat  {
-      font-size: 10px;
+      font-size: 12px;
       letter-spacing: 3px;
       text-transform: uppercase;
       font-weight: 700;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     #p-title {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
       color: #fff;
       line-height: 1.35;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
-    #p-body  { font-size: 14px; line-height: 1.9; color: rgba(255,255,255,0.55); }
-    #p-body p { margin-bottom: 14px; }
+    #p-body  { font-size: 17px; line-height: 1.9; color: rgba(255,255,255,0.55); }
+    #p-body p { margin-bottom: 17px; }
     #p-body p:last-child { margin-bottom: 0; }
     #p-body strong { color: rgba(255,255,255,0.85); }
     #p-body em { color: rgba(255,255,255,0.7); }
     #p-body a { color: #7eb8f7; text-decoration: none; }
     #p-body a:hover { text-decoration: underline; }
-    #p-body ul { margin: 8px 0 14px 18px; line-height: 2.1; }
-    .hr { height: 1px; background: rgba(255,255,255,0.06); margin: 18px 0; }
+    #p-body ul { margin: 10px 0 17px 22px; line-height: 2.1; }
+    .hr { height: 1px; background: rgba(255,255,255,0.06); margin: 22px 0; }
 
     .lbtn {
       display: inline-flex; align-items: center; gap: 8px;
@@ -190,7 +190,7 @@
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 10px;
       color: #8aafff !important;
-      font-size: 13px; font-weight: 500;
+      font-size: 16px; font-weight: 500;
       text-decoration: none !important;
       transition: all 0.25s;
       backdrop-filter: blur(10px);
@@ -199,7 +199,7 @@
 
     .badge {
       display: inline-block; padding: 3px 12px;
-      border-radius: 20px; font-size: 10px; font-weight: 700;
+      border-radius: 20px; font-size: 12px; font-weight: 700;
       letter-spacing: 1.5px; text-transform: uppercase;
       margin-bottom: 14px;
       background: rgba(255,255,255,0.05);
@@ -590,15 +590,15 @@ const cy = cytoscape({
       style: {
         'label': 'data(label)',
         'text-wrap': 'wrap',
-        'text-max-width': '82px',
+        'text-max-width': '72px',
         'text-valign': 'center',
         'text-halign': 'center',
         'font-family': '"Inter", system-ui, sans-serif',
-        'font-size': '11px',
+        'font-size': '10px',
         'font-weight': '600',
         'color': '#fff',
         'text-outline-width': 2.5,
-        'width': 90, 'height': 90,
+        'width': 79, 'height': 79,
         'border-width': 0,
         'cursor': 'pointer',
         'background-opacity': 0.55,
@@ -676,9 +676,9 @@ const cy = cytoscape({
     {
       selector: 'node.r-current',
       style: {
-        'width': 110,
-        'height': 110,
-        'font-size': '14px',
+        'width': 97,
+        'height': 97,
+        'font-size': '12px',
         'border-width': 3,
         'border-color': 'rgba(255,255,255,0.35)',
         'shadow-blur': 35,
@@ -688,9 +688,9 @@ const cy = cytoscape({
     {
       selector: 'node.r-parent',
       style: {
-        'width': 66,
-        'height': 66,
-        'font-size': '9.5px',
+        'width': 58,
+        'height': 58,
+        'font-size': '8.5px',
         'background-opacity': 0.35,
         'color': 'rgba(255,255,255,0.5)',
         'text-outline-color': 'rgba(0,0,0,0.6)',
@@ -699,7 +699,7 @@ const cy = cytoscape({
     },
     {
       selector: 'node.r-child',
-      style: { 'width': 90, 'height': 90 }
+      style: { 'width': 79, 'height': 79 }
     },
     {
       selector: 'node.leaf-sel',
@@ -758,8 +758,8 @@ let busy = false;
 
 function positions(parentId, nodeId, childIds) {
   const n = childIds.length;
-  const VSTEP = 170;
-  const HSTEP = 180;
+  const VSTEP = 150;
+  const HSTEP = 158;
   const pos = {};
 
   const hasParent = !!parentId;
@@ -972,7 +972,7 @@ function ambientLoop(timestamp) {
     const cur = leaf.length ? leaf : cy.nodes('.r-current');
     if (cur.length && cur.inside()) {
       const sin18 = Math.sin(t * 1.8);
-      const baseSize = leaf.length ? 88 : 108;
+      const baseSize = leaf.length ? 78 : 95;
       const range = leaf.length ? 4 : 6;
       const size = Math.round(baseSize + range * sin18);
       cur.style({
