@@ -209,7 +209,7 @@
 
     /* ── LEGEND ──────────────────────────────── */
     #legend {
-      position: fixed; bottom: 20px; left: 16px;
+      position: fixed; bottom: 228px; left: 16px;
       background: rgba(5,5,16,0.6);
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 12px;
@@ -242,6 +242,54 @@
       color: rgba(255,255,255,0.12);
       z-index: 100;
       font-weight: 500;
+    }
+
+    /* ── SEPHIROTH MINIMAP ──────────────────── */
+    #sephiroth {
+      position: fixed;
+      bottom: 20px;
+      left: 16px;
+      width: 170px;
+      height: 200px;
+      z-index: 100;
+      pointer-events: auto;
+      opacity: 0.5;
+      transition: opacity 0.4s;
+    }
+    #sephiroth:hover { opacity: 1; }
+    #sephiroth line {
+      stroke: rgba(255,255,255,0.1);
+      stroke-width: 1;
+      transition: stroke 0.4s, stroke-opacity 0.4s;
+    }
+    #sephiroth line.path-active {
+      stroke: rgba(255,255,255,0.35);
+      stroke-width: 1.5;
+    }
+    #sephiroth circle {
+      cursor: pointer;
+      transition: r 0.3s, fill-opacity 0.3s, filter 0.3s;
+    }
+    #sephiroth circle:hover {
+      r: 9;
+      fill-opacity: 1;
+    }
+    #sephiroth .seph-active {
+      r: 9;
+      fill-opacity: 1;
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+    #sephiroth .seph-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 6px;
+      fill: rgba(255,255,255,0.3);
+      text-anchor: middle;
+      pointer-events: none;
+      transition: fill 0.3s;
+    }
+    #sephiroth .seph-label.label-active {
+      fill: rgba(255,255,255,0.8);
+      font-weight: 600;
     }
 
     /* ── CATEGORY TRANSITION INDICATOR ───────── */
@@ -300,8 +348,15 @@
   <div class="li"><div class="ld" style="color:#6ee7b7;background:#6ee7b7"></div>Contenidos</div>
 </div>
 
-<div id="node-hint">scroll &middot; arrastra</div>
 <div id="category-indicator"></div>
+
+<!-- Sephiroth Tree of Life Minimap -->
+<svg id="sephiroth" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+  <!-- Paths (edges) drawn first -->
+  <g id="seph-edges"></g>
+  <!-- Nodes drawn on top -->
+  <g id="seph-nodes"></g>
+</svg>
 
 <script>
 // ════════════════════════════════════════════════════════
@@ -543,7 +598,7 @@ const cy = cytoscape({
         'font-weight': '600',
         'color': '#fff',
         'text-outline-width': 2.5,
-        'width': 76, 'height': 76,
+        'width': 90, 'height': 90,
         'border-width': 0,
         'cursor': 'pointer',
         'background-opacity': 0.55,
@@ -621,9 +676,9 @@ const cy = cytoscape({
     {
       selector: 'node.r-current',
       style: {
-        'width': 96,
-        'height': 96,
-        'font-size': '13px',
+        'width': 110,
+        'height': 110,
+        'font-size': '14px',
         'border-width': 3,
         'border-color': 'rgba(255,255,255,0.35)',
         'shadow-blur': 35,
@@ -633,8 +688,8 @@ const cy = cytoscape({
     {
       selector: 'node.r-parent',
       style: {
-        'width': 58,
-        'height': 58,
+        'width': 66,
+        'height': 66,
         'font-size': '9.5px',
         'background-opacity': 0.35,
         'color': 'rgba(255,255,255,0.5)',
@@ -644,7 +699,7 @@ const cy = cytoscape({
     },
     {
       selector: 'node.r-child',
-      style: { 'width': 76, 'height': 76 }
+      style: { 'width': 90, 'height': 90 }
     },
     {
       selector: 'node.leaf-sel',
@@ -703,8 +758,8 @@ let busy = false;
 
 function positions(parentId, nodeId, childIds) {
   const n = childIds.length;
-  const VSTEP = 230;
-  const HSTEP = 200;
+  const VSTEP = 170;
+  const HSTEP = 180;
   const pos = {};
 
   const hasParent = !!parentId;
@@ -808,6 +863,7 @@ async function navigate(nodeId, showPanel = true) {
 
   startAmbient();
   updateTopBar(nodeId);
+  updateSephiroth(nodeId);
   if (showPanel) openPanel(nodeId);
 }
 
@@ -885,6 +941,7 @@ cy.on('tap', 'node', evt => {
   } else {
     cy.nodes().removeClass('leaf-sel');
     evt.target.addClass('leaf-sel');
+    updateSephiroth(id);
     openPanel(id);
   }
 });
@@ -915,7 +972,7 @@ function ambientLoop(timestamp) {
     const cur = leaf.length ? leaf : cy.nodes('.r-current');
     if (cur.length && cur.inside()) {
       const sin18 = Math.sin(t * 1.8);
-      const baseSize = leaf.length ? 76 : 94;
+      const baseSize = leaf.length ? 88 : 108;
       const range = leaf.length ? 4 : 6;
       const size = Math.round(baseSize + range * sin18);
       cur.style({
@@ -1026,6 +1083,143 @@ cy.on('mouseout', 'node.r-parent', evt => {
     'color': 'rgba(255,255,255,0.5)',
   });
 });
+
+// ════════════════════════════════════════════════════════
+//  SEPHIROTH MINIMAP (Tree of Life)
+// ════════════════════════════════════════════════════════
+
+const SEPH_COLORS = {
+  root: '#a78bfa',
+  proxy: '#67e8f9',
+  proyectos: '#fbbf24',
+  contenidos: '#6ee7b7',
+};
+
+// Positions arranged as Kabbalistic Tree of Life
+// 3 pillars: Left (Severity), Center (Balance), Right (Mercy)
+const SEPH_POS = {
+  // Crown — Keter
+  canal:      { x: 80, y: 16 },
+  // Row 2 — 3 pillars
+  proxy:      { x: 35, y: 46 },
+  proyectos:  { x: 80, y: 52 },
+  contenidos: { x: 125, y: 46 },
+  // Row 3 — children spread on pillars
+  autor:      { x: 22, y: 78 },
+  libros:     { x: 48, y: 82 },
+  ayudar:     { x: 35, y: 108 },
+  ariadna:    { x: 65, y: 82 },
+  teseo:      { x: 80, y: 96 },
+  galatea:    { x: 95, y: 82 },
+  tematicas:  { x: 125, y: 78 },
+  // Row 4 — leaves
+  contacto:   { x: 12, y: 130 },
+  linktree:   { x: 32, y: 135 },
+  polaris:    { x: 35, y: 158 },
+  arcana:     { x: 52, y: 164 },
+  grimorio:   { x: 18, y: 164 },
+  poetica:    { x: 112, y: 108 },
+  ciencia:    { x: 138, y: 108 },
+  filosofia:  { x: 125, y: 135 },
+};
+
+function buildSephiroth() {
+  const edgesG = document.getElementById('seph-edges');
+  const nodesG = document.getElementById('seph-nodes');
+  edgesG.innerHTML = '';
+  nodesG.innerHTML = '';
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  // Draw edges
+  Object.entries(CHILDREN).forEach(([pid, kids]) => {
+    if (!SEPH_POS[pid]) return;
+    const p = SEPH_POS[pid];
+    kids.forEach(cid => {
+      if (!SEPH_POS[cid]) return;
+      const c = SEPH_POS[cid];
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', p.x);
+      line.setAttribute('y1', p.y);
+      line.setAttribute('x2', c.x);
+      line.setAttribute('y2', c.y);
+      line.dataset.from = pid;
+      line.dataset.to = cid;
+      edgesG.appendChild(line);
+    });
+  });
+
+  // Draw nodes
+  Object.entries(SEPH_POS).forEach(([id, pos]) => {
+    const cat = NODES[id].category;
+    const color = SEPH_COLORS[cat] || '#fff';
+
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', pos.x);
+    circle.setAttribute('cy', pos.y);
+    circle.setAttribute('r', 7);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('fill-opacity', 0.4);
+    circle.style.color = color;
+    circle.dataset.id = id;
+    circle.addEventListener('click', () => navigate(id, true));
+    nodesG.appendChild(circle);
+
+    // Label
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', pos.x);
+    label.setAttribute('y', pos.y + 13);
+    label.classList.add('seph-label');
+    label.dataset.id = id;
+    label.textContent = NODES[id].label.replace('\n', ' ');
+    label.addEventListener('click', () => navigate(id, true));
+    label.style.cursor = 'pointer';
+    nodesG.appendChild(label);
+  });
+}
+
+function updateSephiroth(activeId) {
+  const path = pathTo(activeId);
+  const pathSet = new Set(path);
+
+  // Update nodes
+  document.querySelectorAll('#seph-nodes circle').forEach(c => {
+    const id = c.dataset.id;
+    if (id === activeId) {
+      c.classList.add('seph-active');
+      c.setAttribute('fill-opacity', 1);
+    } else if (pathSet.has(id)) {
+      c.classList.remove('seph-active');
+      c.setAttribute('fill-opacity', 0.7);
+    } else {
+      c.classList.remove('seph-active');
+      c.setAttribute('fill-opacity', 0.25);
+    }
+  });
+
+  // Update labels
+  document.querySelectorAll('#seph-nodes .seph-label').forEach(l => {
+    const id = l.dataset.id;
+    if (id === activeId) {
+      l.classList.add('label-active');
+    } else {
+      l.classList.remove('label-active');
+    }
+  });
+
+  // Update edges
+  document.querySelectorAll('#seph-edges line').forEach(l => {
+    const from = l.dataset.from;
+    const to = l.dataset.to;
+    if (pathSet.has(from) && pathSet.has(to)) {
+      l.classList.add('path-active');
+    } else {
+      l.classList.remove('path-active');
+    }
+  });
+}
+
+buildSephiroth();
 
 // ════════════════════════════════════════════════════════
 //  BOOT
