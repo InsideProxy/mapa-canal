@@ -413,16 +413,16 @@ const NODES = {
   polaris:    { id:'polaris',   label:'Polaris',               category:'proxy'      },
   arcana:     { id:'arcana',    label:'Arcana',                category:'proxy'      },
   grimorio:   { id:'grimorio',  label:'Grimorio del\nLaberinto', category:'proxy'    },
-  ayudar:     { id:'ayudar',    label:'Como\nAyudar',          category:'proxy'      },
+  ayudar:     { id:'ayudar',    label:'Cómo\nAyudar',          category:'proxy'      },
   proyectos:  { id:'proyectos', label:'Proyectos',             category:'proyectos'  },
   ariadna:    { id:'ariadna',   label:'Proyecto\nAriadna',     category:'proyectos'  },
   teseo:      { id:'teseo',     label:'Proyecto\nTeseo',       category:'proyectos'  },
   galatea:    { id:'galatea',   label:'Proyecto\nGalatea',     category:'proyectos'  },
   contenidos: { id:'contenidos',label:'Contenidos\ndel Canal', category:'contenidos' },
-  tematicas:  { id:'tematicas', label:'Tematicas',             category:'contenidos' },
-  poetica:    { id:'poetica',   label:'Poetica',               category:'contenidos' },
+  tematicas:  { id:'tematicas', label:'Temáticas',             category:'contenidos' },
+  poetica:    { id:'poetica',   label:'Poética',               category:'contenidos' },
   ciencia:    { id:'ciencia',   label:'Ciencia',               category:'contenidos' },
-  filosofia:  { id:'filosofia', label:'Filosofia',             category:'contenidos' },
+  filosofia:  { id:'filosofia', label:'Filosofía',             category:'contenidos' },
 };
 
 const CHILDREN = {
@@ -448,18 +448,18 @@ const CONTENT = {
   },
   proxy: {
     color:'#67e8f9', category:'Proxy', title:'Proxy',
-    html:`<p>Seccion dedicada al autor del canal, sus obras y sus medios de contacto.</p>`
+    html:`<p>Sección dedicada al autor del canal, sus obras y sus medios de contacto.</p>`
   },
   autor: {
     color:'#67e8f9', category:'Proxy', title:'Sobre el Autor',
-    html:`<p>Proxy es <strong>Juan Boza Samanes</strong>. Natural de Zaragoza. Estudio Derecho y es master en auditoria y gestion de TIC, master en Derecho Bancario y Financiero de Consumo, y master en Etologia de conflictos sociales y politicos.</p>
+    html:`<p>Proxy es <strong>Juan Boza Samanes</strong>. Natural de Zaragoza. Estudió Derecho y es máster en auditoría y gestión de TIC, máster en Derecho Bancario y Financiero de Consumo, y máster en Etología de conflictos sociales y políticos.</p>
 <div class="hr"></div>
-<p>Su afan por la ciencia le llevo a cambiar radicalmente de carrera. Estudio master en neuropsicologia clinica y master en ciencias cognitivas. Se especializo en bases biologicas del aprendizaje y en la relacion entre tecnologia y cerebro.</p>
-<p>Lleva cuatro anos dedicandose a bases biologicas de la conciencia y teoria de la mente, intentando desarrollar filosofia de la conciencia en las coordenadas del <strong>realismo cognitivo</strong>.</p>`
+<p>Su afán por la ciencia le llevó a cambiar radicalmente de carrera. Estudió máster en neuropsicología clínica y máster en ciencias cognitivas. Se especializó en bases biológicas del aprendizaje y en la relación entre tecnología y cerebro.</p>
+<p>Lleva cuatro años dedicándose a bases biológicas de la conciencia y teoría de la mente, intentando desarrollar filosofía de la conciencia en las coordenadas del <strong>realismo cognitivo</strong>.</p>`
   },
   contacto: {
     color:'#67e8f9', category:'Proxy', title:'Contacto con el Autor',
-    html:`<p>Puedes contactar directamente con el autor por correo electronico.</p>
+    html:`<p>Puedes contactar directamente con el autor por correo electrónico.</p>
 <a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">&#9993; eljuegodelaberinto@gmail.com</a>`
   },
   linktree: {
@@ -469,48 +469,48 @@ const CONTENT = {
   },
   libros: {
     color:'#67e8f9', category:'Proxy', title:'Libros',
-    html:`<p>Obras escritas por Proxy. Explora los nodos conectados para acceder a cada titulo.</p>`
+    html:`<p>Obras escritas por Proxy. Explora los nodos conectados para acceder a cada título.</p>`
   },
   polaris: {
     color:'#67e8f9', category:'Proxy', title:'Polaris',
-    html:`<p>Obra de Proxy sobre la reconstruccion arquetipica de lo masculino y lo femenino.</p>
+    html:`<p>Obra de Proxy sobre la reconstrucción arquetípica de lo masculino y lo femenino.</p>
 <a class="lbtn" href="https://www.amazon.es/Polaris-reconstrucci%C3%B3n-arquet%C3%ADpica-masculino-femenino/dp/B0D123D2RG" target="_blank">&#128214; Ver en Amazon</a>`
   },
   arcana: {
     color:'#67e8f9', category:'Proxy', title:'Arcana',
-    html:`<span class="badge">Proximamente</span><p>El siguiente libro de Proxy esta en preparacion. Pendiente de publicacion.</p>`
+    html:`<span class="badge">Próximamente</span><p>El siguiente libro de Proxy está en preparación. Pendiente de publicación.</p>`
   },
   grimorio: {
     color:'#67e8f9', category:'Proxy', title:'Grimorio del Laberinto',
-    html:`<span class="badge">Proximamente</span><p>Proxima obra de Proxy. Pendiente de publicacion.</p>`
+    html:`<span class="badge">Próximamente</span><p>Próxima obra de Proxy. Pendiente de publicación.</p>`
   },
   ayudar: {
-    color:'#67e8f9', category:'Proxy', title:'Como Ayudar',
-    html:`<p>Puedes ayudar al canal aportando <strong>informacion o trabajo</strong> sobre los proyectos de investigacion, colaborar economicamente por transferencia de <a class="lbtn" href="https://www.paypal.com/paypalme/my/profile" target="_blank">&#128176; PayPal</a></p>
+    color:'#67e8f9', category:'Proxy', title:'Cómo Ayudar',
+    html:`<p>Puedes ayudar al canal aportando <strong>información o trabajo</strong> sobre los proyectos de investigación, colaborar económicamente por transferencia de <a class="lbtn" href="https://www.paypal.com/paypalme/my/profile" target="_blank">&#128176; PayPal</a></p>
 <p>O apoyar de forma recurrente en Patreon:</p>
 <a class="lbtn" href="https://www.patreon.com/inside_proxy" target="_blank">&#9829; Patreon — inside_proxy</a>
 <div class="hr"></div>
 <p>Proxy necesita un <strong>director de tesis en Barcelona</strong>, fondos para poder estudiar, y contactos donde poder ir a hablar de su tema.</p>
 <p>Si conoces <strong>podcasters o lugares</strong> donde recomendar su trabajo o sus conferencias, puede ayudar mucho al canal.</p>
-<p>Tambien puedes recomendar o regalar sus <span class="bc" style="color:#67e8f9;cursor:pointer;text-decoration:underline" onclick="navigate('libros',true)">libros</span>, o su <strong>Merchandising</strong>.</p>`
+<p>También puedes recomendar o regalar sus <span class="bc" style="color:#67e8f9;cursor:pointer;text-decoration:underline" onclick="navigate('libros',true)">libros</span>, o su <strong>Merchandising</strong>.</p>`
   },
   proyectos: {
     color:'#fbbf24', category:'Proyectos', title:'Proyectos',
-    html:`<p>Iniciativas activas del canal Proxy: investigacion, tecnologia e inteligencia artificial al servicio de la filosofia de la mente.</p>`
+    html:`<p>Iniciativas activas del canal Proxy: investigación, tecnología e inteligencia artificial al servicio de la filosofía de la mente.</p>`
   },
   ariadna: {
     color:'#fbbf24', category:'Proyectos', title:'Proyecto Ariadna',
     html:`<p><strong>Ariadna</strong> es una iniciativa dedicada a convertir los estudios del autor en material publicable.</p>
-<p>Puedes ayudar a Proxy a doctorarse aportando al Patreon o participando en la construccion de articulos publicables.</p>
+<p>Puedes ayudar a Proxy a doctorarse aportando al Patreon o participando en la construcción de artículos publicables.</p>
 <div class="hr"></div>
-<p><strong>Tema del doctorado:</strong><br><em>"Bases neurobiologicas de la conciencia: Reclasificacion teleosemantica de funciones cognitivas."</em></p>
-<p>La disciplina esta basada en la <strong>teleosemantica de Millikan et al.</strong> Si tienes contactos, puedes referenciar el canal o a su autor.</p>
+<p><strong>Tema del doctorado:</strong><br><em>"Bases neurobiológicas de la conciencia: Reclasificación teleosemántica de funciones cognitivas."</em></p>
+<p>La disciplina está basada en la <strong>teleosemántica de Millikan et al.</strong> Si tienes contactos, puedes referenciar el canal o a su autor.</p>
 <a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">&#9993; Contactar al Autor</a>`
   },
   teseo: {
     color:'#fbbf24', category:'Proyectos', title:'Proyecto Teseo',
-    html:`<p><strong>Teseo</strong> es una aplicacion remota de NotebookLM donde todos los directos forman parte del repositorio de una IA simple.</p>
-<p>Permite al usuario hacer preguntas sobre como piensa Proxy acerca de ciertos temas, o consultar definiciones de conceptos para introducirse en la semantica cognitiva del canal.</p>
+    html:`<p><strong>Teseo</strong> es una aplicación remota de NotebookLM donde todos los directos forman parte del repositorio de una IA simple.</p>
+<p>Permite al usuario hacer preguntas sobre cómo piensa Proxy acerca de ciertos temas, o consultar definiciones de conceptos para introducirse en la semántica cognitiva del canal.</p>
 <div class="hr"></div>
 <p>Se actualiza constantemente con todos los contenidos, incluidos los libros escritos por Proxy.</p>
 <p>Puedes colaborar <strong>preguntando y testeando el NotebookLM</strong>.</p>
@@ -518,44 +518,44 @@ const CONTENT = {
   },
   galatea: {
     color:'#fbbf24', category:'Proyectos', title:'Proyecto Galatea',
-    html:`<p><strong>Galatea</strong> es el proyecto mas ambicioso de Proxy. <em>Gala</em> es un pequeno organismo artificial programado en un entorno virtual que se comporta conforme a la estructura de la mente de un organismo humano.</p>
+    html:`<p><strong>Galatea</strong> es el proyecto más ambicioso de Proxy. <em>Gala</em> es un pequeño organismo artificial programado en un entorno virtual que se comporta conforme a la estructura de la mente de un organismo humano.</p>
 <p>Una mente artificial programada para aprender como si fuera un organismo vivo, presentando la misma estructura mental que un humano.</p>
 <div class="hr"></div>
-<p>Galatea pretende ser la respuesta inversa al paradigma de <strong>"la habitacion china"</strong>: una IA sera una inteligencia cuando sea indistinguible de la inteligencia humana.</p>
-<p>Galatea es el diseno de Gala, una <a href="https://es.wikipedia.org/wiki/Hydra_(animal)" target="_blank">Hidra</a> con sistemas representacionales de arquitectura cognitiva protohumana.</p>`
+<p>Galatea pretende ser la respuesta inversa al paradigma de <strong>"la habitación china"</strong>: una IA será una inteligencia cuando sea indistinguible de la inteligencia humana.</p>
+<p>Galatea es el diseño de Gala, una <a href="https://es.wikipedia.org/wiki/Hydra_(animal)" target="_blank">Hidra</a> con sistemas representacionales de arquitectura cognitiva protohumana.</p>`
   },
   contenidos: {
     color:'#6ee7b7', category:'Contenidos del Canal', title:'Contenidos del Canal',
-    html:`<p>El canal produce contenido en YouTube y Twitch estructurado en tres grandes tematicas: <strong>Poetica</strong>, <strong>Ciencia</strong> y <strong>Filosofia</strong>.</p>`
+    html:`<p>El canal produce contenido en YouTube y Twitch estructurado en tres grandes temáticas: <strong>Poética</strong>, <strong>Ciencia</strong> y <strong>Filosofía</strong>.</p>`
   },
   tematicas: {
-    color:'#6ee7b7', category:'Contenidos del Canal', title:'Tematicas',
-    html:`<p>El contenido se organiza en tres areas tematicas, cada una abordada desde las coordenadas del <strong>Realismo Cognitivo</strong> de Proxy.</p>`
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Temáticas',
+    html:`<p>El contenido se organiza en tres áreas temáticas, cada una abordada desde las coordenadas del <strong>Realismo Cognitivo</strong> de Proxy.</p>`
   },
   poetica: {
-    color:'#6ee7b7', category:'Contenidos del Canal', title:'Poetica',
-    html:`<p>En el canal se analiza la <strong>fantasia y la mitologia</strong> con un enfoque psicoanalitico para transmitir y experimentar la <strong>semiotica</strong>: la disciplina filosofica que estudia que es el significado.</p>
-<p>El simbolo es imprescindible en fantasia, y es a traves de la semiotica como Proxy ha desarrollado conceptos como idea, arquetipo, representacion y mente.</p>
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Poética',
+    html:`<p>En el canal se analiza la <strong>fantasía y la mitología</strong> con un enfoque psicoanalítico para transmitir y experimentar la <strong>semiótica</strong>: la disciplina filosófica que estudia qué es el significado.</p>
+<p>El símbolo es imprescindible en fantasía, y es a través de la semiótica como Proxy ha desarrollado conceptos como idea, arquetipo, representación y mente.</p>
 <div class="hr"></div>
-<p>Aunque el Realismo Cognitivo se opone al psicoanalisis como descriptor valido de la mente, si es un vehiculo valido de <strong>autoforia</strong>: estructuras que manifiestan como piensa la mente. Tambien se habla de <strong>Magia</strong>.</p>`
+<p>Aunque el Realismo Cognitivo se opone al psicoanálisis como descriptor válido de la mente, sí es un vehículo válido de <strong>autoforía</strong>: estructuras que manifiestan cómo piensa la mente. También se habla de <strong>Magia</strong>.</p>`
   },
   ciencia: {
     color:'#6ee7b7', category:'Contenidos del Canal', title:'Ciencia',
-    html:`<p>En YouTube y Twitch se realizan directos <strong>"magistrales"</strong> desarrollando conceptos de ciencia psicologica y biologica con la vision de Proxy y la mayor objetividad posible.</p>
+    html:`<p>En YouTube y Twitch se realizan directos <strong>"magistrales"</strong> desarrollando conceptos de ciencia psicológica y biológica con la visión de Proxy y la mayor objetividad posible.</p>
 <p>Algunos temas tratados:</p>
 <ul>
   <li>Concepto de "enfermedad mental"</li>
-  <li>Sindromes clinicos y anomalias psicologicas</li>
-  <li>Mecanica de los suenos</li>
+  <li>Síndromes clínicos y anomalías psicológicas</li>
+  <li>Mecánica de los sueños</li>
   <li>Experimentos famosos</li>
-  <li>Filosofia de la Magia</li>
+  <li>Filosofía de la Magia</li>
 </ul>`
   },
   filosofia: {
-    color:'#6ee7b7', category:'Contenidos del Canal', title:'Filosofia',
-    html:`<p>Proxy desarrolla sobre la pizarra los conceptos mas importantes desde las coordenadas del <strong>Realismo Cognitivo</strong> y su <em>teoria de la representacion</em>.</p>
-<p>Se habla de <strong>matematicas y biologia</strong> en un nivel algo mas avanzado que los canales de divulgacion tipicos de internet.</p>
-<p>Tambien se abordan los <strong>fundamentos psicologicos de la Magia</strong>.</p>`
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Filosofía',
+    html:`<p>Proxy desarrolla sobre la pizarra los conceptos más importantes desde las coordenadas del <strong>Realismo Cognitivo</strong> y su <em>teoría de la representación</em>.</p>
+<p>Se habla de <strong>matemáticas y biología</strong> en un nivel algo más avanzado que los canales de divulgación típicos de internet.</p>
+<p>También se abordan los <strong>fundamentos psicológicos de la Magia</strong>.</p>`
   },
 };
 
