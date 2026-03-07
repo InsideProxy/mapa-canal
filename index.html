@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proxy — Mapa del Canal</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a18;
+      color: #dde0f5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #cy {
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(ellipse at 50% 40%, #0f0f2a 0%, #0a0a18 70%);
+    }
+
+    /* ── TOP BAR ─────────────────────────────── */
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 46px;
+      background: rgba(8,8,20,0.92);
+      border-bottom: 1px solid #181838;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      z-index: 200;
+    }
+
+    #btn-back {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background: #181840;
+      border: 1px solid #28286a;
+      border-radius: 6px;
+      padding: 4px 12px;
+      color: #8aafff;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.18s;
+      flex-shrink: 0;
+    }
+    #btn-back:hover { background: #202068; }
+    #btn-back.vis { display: flex; }
+
+    #breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      overflow: hidden;
+      flex: 1;
+    }
+    .bc { color: #3a3a6a; white-space: nowrap; cursor: pointer; transition: color 0.15s; }
+    .bc:hover { color: #8aafff; }
+    .bc.cur { color: #8aafff; cursor: default; }
+    .bc-sep { color: #252550; font-size: 11px; }
+
+    #topbar-hint {
+      font-size: 11px;
+      color: #2e2e58;
+      white-space: nowrap;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    /* ── PANEL ───────────────────────────────── */
+    #panel {
+      position: fixed;
+      top: 46px; right: 0; bottom: 0;
+      width: 360px;
+      background: #0c0c24;
+      border-left: 1px solid #181838;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      z-index: 150;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #222250 #0c0c24;
+    }
+    #panel.open { transform: translateX(0); }
+
+    #panel-inner { padding: 24px 22px 60px; }
+
+    #btn-close {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: #181840;
+      border: none;
+      color: #444;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    #btn-close:hover { background: #28286a; color: #fff; }
+
+    #p-cat  { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+    #p-title { font-size: 21px; font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 18px; }
+    #p-body  { font-size: 14px; line-height: 1.85; color: #9094b8; }
+    #p-body p { margin-bottom: 12px; }
+    #p-body p:last-child { margin-bottom: 0; }
+    #p-body strong { color: #dde0f5; }
+    #p-body em { color: #b8bcdf; }
+    #p-body a { color: #7eb8f7; text-decoration: none; }
+    #p-body a:hover { text-decoration: underline; }
+    #p-body ul { margin: 8px 0 12px 18px; line-height: 2.1; }
+    .hr { height: 1px; background: #181838; margin: 16px 0; }
+
+    .lbtn {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 14px; padding: 9px 18px;
+      background: #141440; border: 1px solid #26266a;
+      border-radius: 8px; color: #8aafff !important;
+      font-size: 13px; font-weight: 500;
+      text-decoration: none !important;
+      transition: background 0.18s;
+    }
+    .lbtn:hover { background: #1e1e60 !important; }
+
+    .badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 20px; font-size: 10px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 14px; background: #141440;
+      color: #7eb8f7; border: 1px solid #26266a;
+    }
+
+    /* ── LEGEND ──────────────────────────────── */
+    #legend {
+      position: fixed; bottom: 18px; left: 14px;
+      background: rgba(8,8,20,0.88);
+      border: 1px solid #181838; border-radius: 10px;
+      padding: 12px 16px; z-index: 100;
+      backdrop-filter: blur(6px);
+    }
+    #legend h4 { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #2e2e58; margin-bottom: 9px; }
+    .li { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #3a3a68; margin-bottom: 6px; }
+    .li:last-child { margin-bottom: 0; }
+    .ld { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── NODE COUNTER ────────────────────────── */
+    #node-hint {
+      position: fixed; bottom: 18px; right: 14px;
+      font-size: 11px; color: #252550;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <button id="btn-back" onclick="goBack()">← </button>
+  <div id="breadcrumb"></div>
+  <span id="topbar-hint">Clic en un nodo para explorar</span>
+</div>
+
+<div id="cy"></div>
+
+<div id="panel">
+  <div id="panel-inner">
+    <button id="btn-close" onclick="closePanel()">✕</button>
+    <div id="p-cat"></div>
+    <div id="p-title"></div>
+    <div id="p-body"></div>
+  </div>
+</div>
+
+<div id="legend">
+  <h4>Categorías</h4>
+  <div class="li"><div class="ld" style="background:#8b5cf6"></div>El Canal</div>
+  <div class="li"><div class="ld" style="background:#06b6d4"></div>Proxy</div>
+  <div class="li"><div class="ld" style="background:#f59e0b"></div>Proyectos</div>
+  <div class="li"><div class="ld" style="background:#10b981"></div>Contenidos</div>
+</div>
+
+<div id="node-hint">scroll · arrastra</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════════
+
+const NODES = {
+  canal:      { id:'canal',     label:'El Canal',              category:'root'       },
+  proxy:      { id:'proxy',     label:'Proxy',                 category:'proxy'      },
+  autor:      { id:'autor',     label:'Sobre el\nAutor',       category:'proxy'      },
+  contacto:   { id:'contacto',  label:'Contacto',              category:'proxy'      },
+  linktree:   { id:'linktree',  label:'Linktree',              category:'proxy'      },
+  libros:     { id:'libros',    label:'Libros',                category:'proxy'      },
+  polaris:    { id:'polaris',   label:'Polaris',               category:'proxy'      },
+  arcana:     { id:'arcana',    label:'Arcana',                category:'proxy'      },
+  grimorio:   { id:'grimorio',  label:'Grimorio del\nLaberinto', category:'proxy'    },
+  proyectos:  { id:'proyectos', label:'Proyectos',             category:'proyectos'  },
+  ariadna:    { id:'ariadna',   label:'Proyecto\nAriadna',     category:'proyectos'  },
+  teseo:      { id:'teseo',     label:'Proyecto\nTeseo',       category:'proyectos'  },
+  galatea:    { id:'galatea',   label:'Proyecto\nGalatea',     category:'proyectos'  },
+  contenidos: { id:'contenidos',label:'Contenidos\ndel Canal', category:'contenidos' },
+  tematicas:  { id:'tematicas', label:'Temáticas',             category:'contenidos' },
+  poetica:    { id:'poetica',   label:'Poética',               category:'contenidos' },
+  ciencia:    { id:'ciencia',   label:'Ciencia',               category:'contenidos' },
+  filosofia:  { id:'filosofia', label:'Filosofía',             category:'contenidos' },
+};
+
+const CHILDREN = {
+  canal:      ['proxy','proyectos','contenidos'],
+  proxy:      ['autor','libros'],
+  autor:      ['contacto','linktree'],
+  libros:     ['polaris','arcana','grimorio'],
+  proyectos:  ['ariadna','teseo','galatea'],
+  contenidos: ['tematicas'],
+  tematicas:  ['poetica','ciencia','filosofia'],
+  contacto:[], linktree:[], polaris:[], arcana:[], grimorio:[],
+  ariadna:[], teseo:[], galatea:[], poetica:[], ciencia:[], filosofia:[],
+};
+
+const PARENT = { canal: null };
+Object.entries(CHILDREN).forEach(([p, cs]) => cs.forEach(c => PARENT[c] = p));
+
+const CONTENT = {
+  canal: {
+    color:'#8b5cf6', category:'El Canal', title:'Proxy — El Canal',
+    html:`<p>Bienvenido al mapa interactivo del canal <strong>Proxy</strong>.</p>
+<p>Haz clic en cualquier nodo para expandirlo y descubrir su contenido. El nodo superior te lleva siempre al nivel anterior.</p>`
+  },
+  proxy: {
+    color:'#06b6d4', category:'Proxy', title:'Proxy',
+    html:`<p>Sección dedicada al autor del canal, sus obras y sus medios de contacto.</p>`
+  },
+  autor: {
+    color:'#06b6d4', category:'Proxy', title:'Sobre el Autor',
+    html:`<p>Proxy es <strong>Juan Boza Samanes</strong>. Natural de Zaragoza. Estudió Derecho y es máster en auditoría y gestión de TIC, máster en Derecho Bancario y Financiero de Consumo, y máster en Etología de conflictos sociales y políticos.</p>
+<div class="hr"></div>
+<p>Su afán por la ciencia le llevó a cambiar radicalmente de carrera. Estudió máster en neuropsicología clínica y máster en ciencias cognitivas. Se especializó en bases biológicas del aprendizaje y en la relación entre tecnología y cerebro.</p>
+<p>Lleva cuatro años dedicándose a bases biológicas de la conciencia y teoría de la mente, intentando desarrollar filosofía de la conciencia en las coordenadas del <strong>realismo cognitivo</strong>.</p>`
+  },
+  contacto: {
+    color:'#06b6d4', category:'Proxy', title:'Contacto con el Autor',
+    html:`<p>Puedes contactar directamente con el autor por correo electrónico.</p>
+<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">✉ eljuegodelaberinto@gmail.com</a>`
+  },
+  linktree: {
+    color:'#06b6d4', category:'Proxy', title:'Linktree',
+    html:`<p>Todos los enlaces del canal y del autor reunidos en un solo lugar.</p>
+<a class="lbtn" href="https://linktr.ee/inside_proxy" target="_blank">🔗 linktr.ee/inside_proxy</a>`
+  },
+  libros: {
+    color:'#06b6d4', category:'Proxy', title:'Libros',
+    html:`<p>Obras escritas por Proxy. Explora los nodos conectados para acceder a cada título.</p>`
+  },
+  polaris: {
+    color:'#06b6d4', category:'Proxy', title:'Polaris',
+    html:`<p>Obra de Proxy sobre la reconstrucción arquetípica de lo masculino y lo femenino.</p>
+<a class="lbtn" href="https://www.amazon.es/Polaris-reconstrucci%C3%B3n-arquet%C3%ADpica-masculino-femenino/dp/B0D123D2RG" target="_blank">📖 Ver en Amazon</a>`
+  },
+  arcana: {
+    color:'#06b6d4', category:'Proxy', title:'Arcana',
+    html:`<span class="badge">Próximamente</span><p>El siguiente libro de Proxy está en preparación. Pendiente de publicación.</p>`
+  },
+  grimorio: {
+    color:'#06b6d4', category:'Proxy', title:'Grimorio del Laberinto',
+    html:`<span class="badge">Próximamente</span><p>Próxima obra de Proxy. Pendiente de publicación.</p>`
+  },
+  proyectos: {
+    color:'#f59e0b', category:'Proyectos', title:'Proyectos',
+    html:`<p>Iniciativas activas del canal Proxy: investigación, tecnología e inteligencia artificial al servicio de la filosofía de la mente.</p>`
+  },
+  ariadna: {
+    color:'#f59e0b', category:'Proyectos', title:'Proyecto Ariadna',
+    html:`<p><strong>Ariadna</strong> es una iniciativa dedicada a convertir los estudios del autor en material publicable.</p>
+<p>Puedes ayudar a Proxy a doctorarse aportando al Patreon o participando en la construcción de artículos publicables.</p>
+<div class="hr"></div>
+<p><strong>Tema del doctorado:</strong><br><em>"Bases neurobiológicas de la conciencia: Reclasificación teleosemántica de funciones cognitivas."</em></p>
+<p>La disciplina está basada en la <strong>teleosemántica de Millikan et al.</strong> Si tienes contactos, puedes referenciar el canal o a su autor.</p>
+<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">✉ Contactar al Autor</a>`
+  },
+  teseo: {
+    color:'#f59e0b', category:'Proyectos', title:'Proyecto Teseo',
+    html:`<p><strong>Teseo</strong> es una aplicación remota de NotebookLM donde todos los directos forman parte del repositorio de una IA simple.</p>
+<p>Permite al usuario hacer preguntas sobre cómo piensa Proxy acerca de ciertos temas, o consultar definiciones de conceptos para introducirse en la semántica cognitiva del canal.</p>
+<div class="hr"></div>
+<p>Se actualiza constantemente con todos los contenidos, incluidos los libros escritos por Proxy.</p>
+<p>Puedes colaborar <strong>preguntando y testeando el NotebookLM</strong>.</p>
+<a class="lbtn" href="https://is.gd/labyrinth_searcher" target="_blank">🔍 Abrir Proyecto Teseo</a>`
+  },
+  galatea: {
+    color:'#f59e0b', category:'Proyectos', title:'Proyecto Galatea',
+    html:`<p><strong>Galatea</strong> es el proyecto más ambicioso de Proxy. <em>Gala</em> es un pequeño organismo artificial programado en un entorno virtual que se comporta conforme a la estructura de la mente de un organismo humano.</p>
+<p>Una mente artificial programada para aprender como si fuera un organismo vivo, presentando la misma estructura mental que un humano.</p>
+<div class="hr"></div>
+<p>Galatea pretende ser la respuesta inversa al paradigma de <strong>"la habitación china"</strong>: una IA será una inteligencia cuando sea indistinguible de la inteligencia humana.</p>
+<p>Galatea es el diseño de Gala, una <a href="https://es.wikipedia.org/wiki/Hydra_(animal)" target="_blank">Hidra</a> con sistemas representacionales de arquitectura cognitiva protohumana.</p>`
+  },
+  contenidos: {
+    color:'#10b981', category:'Contenidos del Canal', title:'Contenidos del Canal',
+    html:`<p>El canal produce contenido en YouTube y Twitch estructurado en tres grandes temáticas: <strong>Poética</strong>, <strong>Ciencia</strong> y <strong>Filosofía</strong>.</p>`
+  },
+  tematicas: {
+    color:'#10b981', category:'Contenidos del Canal', title:'Temáticas',
+    html:`<p>El contenido se organiza en tres áreas temáticas, cada una abordada desde las coordenadas del <strong>Realismo Cognitivo</strong> de Proxy.</p>`
+  },
+  poetica: {
+    color:'#10b981', category:'Contenidos del Canal', title:'Poética',
+    html:`<p>En el canal se analiza la <strong>fantasía y la mitología</strong> con un enfoque psicoanalítico para transmitir y experimentar la <strong>semiótica</strong>: la disciplina filosófica que estudia qué es el significado.</p>
+<p>El símbolo es imprescindible en fantasía, y es a través de la semiótica como Proxy ha desarrollado conceptos como idea, arquetipo, representación y mente.</p>
+<div class="hr"></div>
+<p>Aunque el Realismo Cognitivo se opone al psicoanálisis como descriptor válido de la mente, sí es un vehículo válido de <strong>autoforía</strong>: estructuras que manifiestan cómo piensa la mente. También se habla de <strong>Magia</strong>.</p>`
+  },
+  ciencia: {
+    color:'#10b981', category:'Contenidos del Canal', title:'Ciencia',
+    html:`<p>En YouTube y Twitch se realizan directos <strong>"magistrales"</strong> desarrollando conceptos de ciencia psicológica y biológica con la visión de Proxy y la mayor objetividad posible.</p>
+<p>Algunos temas tratados:</p>
+<ul>
+  <li>Concepto de "enfermedad mental"</li>
+  <li>Síndromes clínicos y anomalías psicológicas</li>
+  <li>Mecánica de los sueños</li>
+  <li>Experimentos famosos</li>
+  <li>Filosofía de la Magia</li>
+</ul>`
+  },
+  filosofia: {
+    color:'#10b981', category:'Contenidos del Canal', title:'Filosofía',
+    html:`<p>Proxy desarrolla sobre la pizarra los conceptos más importantes desde las coordenadas del <strong>Realismo Cognitivo</strong> y su <em>teoría de la representación</em>.</p>
+<p>Se habla de <strong>matemáticas y biología</strong> en un nivel algo más avanzado que los canales de divulgación típicos de internet.</p>
+<p>También se abordan los <strong>fundamentos psicológicos de la Magia</strong>.</p>`
+  },
+};
+
+// ════════════════════════════════════════════════════════
+//  CYTOSCAPE INIT
+// ════════════════════════════════════════════════════════
+
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: [],
+  style: [
+    {
+      selector: 'node',
+      style: {
+        'label': 'data(label)',
+        'text-wrap': 'wrap',
+        'text-max-width': '78px',
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'font-family': '"Segoe UI", system-ui, sans-serif',
+        'font-size': '11px',
+        'font-weight': '600',
+        'color': '#fff',
+        'text-outline-width': 2,
+        'width': 72, 'height': 72,
+        'border-width': 0,
+        'cursor': 'pointer',
+      }
+    },
+    { selector: 'node[category="root"]',       style: { 'background-color':'#8b5cf6', 'text-outline-color':'#4a1f9e' } },
+    { selector: 'node[category="proxy"]',      style: { 'background-color':'#06b6d4', 'text-outline-color':'#036e82' } },
+    { selector: 'node[category="proyectos"]',  style: { 'background-color':'#f59e0b', 'text-outline-color':'#8a5605' } },
+    { selector: 'node[category="contenidos"]', style: { 'background-color':'#10b981', 'text-outline-color':'#086645' } },
+    {
+      selector: 'node.r-current',
+      style: { 'width':90, 'height':90, 'font-size':'13px', 'border-width':3, 'border-color':'#fff', 'border-opacity':0.45 }
+    },
+    {
+      selector: 'node.r-parent',
+      style: { 'width':56, 'height':56, 'font-size':'9.5px', 'background-opacity':0.4, 'color':'#666', 'text-outline-color':'#000' }
+    },
+    {
+      selector: 'node.r-child',
+      style: { 'width':72, 'height':72 }
+    },
+    {
+      selector: 'node.leaf-sel',
+      style: { 'border-width':3, 'border-color':'#fff', 'border-opacity':0.55 }
+    },
+    {
+      selector: 'edge',
+      style: { 'width':1.5, 'line-color':'#22225a', 'curve-style':'bezier', 'target-arrow-shape':'none' }
+    },
+    {
+      selector: 'edge.e-up',
+      style: { 'line-style':'dashed', 'line-dash-pattern':[5,5], 'line-color':'#181840', 'width':1 }
+    },
+    {
+      selector: 'edge.e-down',
+      style: { 'line-color':'#2a2a6a', 'target-arrow-shape':'triangle', 'target-arrow-color':'#2a2a6a' }
+    },
+  ],
+  userZoomingEnabled: true,
+  userPanningEnabled: true,
+  wheelSensitivity: 0.2,
+  minZoom: 0.25,
+  maxZoom: 4,
+});
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+
+let currentId = null;
+let busy = false;
+
+// ════════════════════════════════════════════════════════
+//  POSITIONS
+// ════════════════════════════════════════════════════════
+
+function positions(parentId, nodeId, childIds) {
+  const n = childIds.length;
+  const VSTEP = 230;
+  const HSTEP = 200;
+  const pos = {};
+
+  const hasParent = !!parentId;
+  const currentY = hasParent ? -60 : (n > 0 ? -90 : 0);
+  const parentY  = currentY - VSTEP;
+  const childY   = currentY + VSTEP;
+
+  if (hasParent) pos[parentId] = { x: 0, y: parentY };
+  pos[nodeId] = { x: 0, y: currentY };
+
+  if (n > 0) {
+    const totalW = (n - 1) * HSTEP;
+    childIds.forEach((id, i) => {
+      pos[id] = { x: -totalW / 2 + i * HSTEP, y: childY };
+    });
+  }
+
+  return pos;
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVIGATE
+// ════════════════════════════════════════════════════════
+
+async function navigate(nodeId, showPanel = true) {
+  if (busy) return;
+  if (nodeId === currentId) {
+    if (showPanel) openPanel(nodeId);
+    return;
+  }
+
+  busy = true;
+
+  const parentId = PARENT[nodeId];
+  const childIds = CHILDREN[nodeId] || [];
+  const pos      = positions(parentId, nodeId, childIds);
+
+  // 1 — fade out
+  const cur = cy.elements();
+  if (cur.length > 0) {
+    await new Promise(r => cur.animate({ style:{ opacity:0 } }, { duration:160, complete:r }));
+    cur.remove();
+  }
+
+  // 2 — add nodes
+  const allIds = [nodeId, ...childIds, ...(parentId ? [parentId] : [])];
+  allIds.forEach(id => {
+    const roleClass = id === nodeId ? 'r-current' : id === parentId ? 'r-parent' : 'r-child';
+    const n = NODES[id];
+    cy.add({
+      group: 'nodes',
+      data: { id: n.id, label: n.label, category: n.category },
+      classes: roleClass,
+      position: pos[id],
+      style: { opacity: 0 },
+    });
+  });
+
+  // 3 — add edges
+  if (parentId) {
+    cy.add({ group:'edges', data:{ id:'e-up', source:parentId, target:nodeId }, classes:'e-up', style:{ opacity:0 } });
+  }
+  childIds.forEach((cid, i) => {
+    cy.add({ group:'edges', data:{ id:`e-d${i}`, source:nodeId, target:cid }, classes:'e-down', style:{ opacity:0 } });
+  });
+
+  // 4 — fit
+  cy.fit(cy.elements(), 90);
+
+  // 5 — fade in (different opacity targets per role)
+  const DUR = 380;
+  const anims = [
+    new Promise(r => cy.nodes('.r-current').animate({ style:{ opacity:1   } }, { duration:DUR, complete:r })),
+  ];
+  const ch = cy.nodes('.r-child');
+  const de = cy.edges('.e-down');
+  if (ch.length) anims.push(new Promise(r => ch.animate({ style:{ opacity:1    } }, { duration:DUR, complete:r })));
+  if (de.length) anims.push(new Promise(r => de.animate({ style:{ opacity:0.75 } }, { duration:DUR, complete:r })));
+  if (parentId) {
+    anims.push(new Promise(r => cy.nodes('.r-parent').animate({ style:{ opacity:0.42 } }, { duration:DUR, complete:r })));
+    anims.push(new Promise(r => cy.edges('.e-up'   ).animate({ style:{ opacity:0.22 } }, { duration:DUR, complete:r })));
+  }
+  await Promise.all(anims);
+
+  currentId = nodeId;
+  busy = false;
+
+  updateTopBar(nodeId);
+  if (showPanel) openPanel(nodeId);
+}
+
+function goBack() {
+  const p = PARENT[currentId];
+  if (p !== null && p !== undefined) navigate(p, true);
+}
+
+// ════════════════════════════════════════════════════════
+//  TOP BAR
+// ════════════════════════════════════════════════════════
+
+function pathTo(nodeId) {
+  const p = [];
+  let c = nodeId;
+  while (c !== null && c !== undefined) { p.unshift(c); c = PARENT[c]; }
+  return p;
+}
+
+function updateTopBar(nodeId) {
+  const path = pathTo(nodeId);
+  const isRoot = PARENT[nodeId] === null;
+
+  // back button
+  const btn = document.getElementById('btn-back');
+  if (isRoot) {
+    btn.classList.remove('vis');
+  } else {
+    const pLabel = NODES[PARENT[nodeId]].label.replace('\n', ' ');
+    btn.innerHTML = `← ${pLabel}`;
+    btn.classList.add('vis');
+  }
+
+  // breadcrumb
+  document.getElementById('breadcrumb').innerHTML = path.map((id, i) => {
+    const lbl = NODES[id].label.replace('\n', ' ');
+    const sep = i > 0 ? '<span class="bc-sep">›</span>' : '';
+    if (i === path.length - 1) return `${sep}<span class="bc cur">${lbl}</span>`;
+    return `${sep}<span class="bc" onclick="navigate('${id}',true)">${lbl}</span>`;
+  }).join('');
+
+  // hint
+  const hasKids = CHILDREN[nodeId] && CHILDREN[nodeId].length > 0;
+  document.getElementById('topbar-hint').textContent = hasKids
+    ? 'Clic en nodo hijo para expandir'
+    : 'Sin subnodos — clic en ← para volver';
+}
+
+// ════════════════════════════════════════════════════════
+//  PANEL
+// ════════════════════════════════════════════════════════
+
+function openPanel(nodeId) {
+  const d = CONTENT[nodeId];
+  if (!d) return;
+  document.getElementById('p-cat').innerHTML =
+    `<span style="color:${d.color}">${d.category}</span>`;
+  document.getElementById('p-title').textContent = d.title;
+  document.getElementById('p-body').innerHTML = d.html;
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  cy.nodes().removeClass('leaf-sel');
+}
+
+// ════════════════════════════════════════════════════════
+//  EVENTS
+// ════════════════════════════════════════════════════════
+
+cy.on('tap', 'node', evt => {
+  const id = evt.target.id();
+  const hasKids = CHILDREN[id] && CHILDREN[id].length > 0;
+
+  if (hasKids) {
+    // navigate in or back (parent also has kids)
+    navigate(id, true);
+  } else {
+    // leaf: highlight + show panel without navigating
+    cy.nodes().removeClass('leaf-sel');
+    evt.target.addClass('leaf-sel');
+    openPanel(id);
+  }
+});
+
+cy.on('tap', evt => {
+  if (evt.target === cy) closePanel();
+});
+
+cy.on('mouseover', 'node', () => document.body.style.cursor = 'pointer');
+cy.on('mouseout',  'node', () => document.body.style.cursor = 'default');
+
+// ════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════
+
+navigate('canal', false);
+</script>
+</body>
+</html>
