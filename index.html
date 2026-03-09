@@ -418,6 +418,7 @@ const NODES = {
   ariadna:    { id:'ariadna',   label:'Proyecto\nAriadna',     category:'proyectos'  },
   teseo:      { id:'teseo',     label:'Proyecto\nTeseo',       category:'proyectos'  },
   galatea:    { id:'galatea',   label:'Proyecto\nGalatea',     category:'proyectos'  },
+  pandora:    { id:'pandora',  label:'Proyecto\nPandora',     category:'proyectos'  },
   contenidos: { id:'contenidos',label:'Contenidos\ndel Canal', category:'contenidos' },
   tematicas:  { id:'tematicas', label:'Temáticas',             category:'contenidos' },
   poetica:    { id:'poetica',   label:'Poética',               category:'contenidos' },
@@ -430,11 +431,11 @@ const CHILDREN = {
   proxy:      ['autor','libros','ayudar'],
   autor:      ['contacto','linktree'],
   libros:     ['polaris','arcana','grimorio'],
-  proyectos:  ['ariadna','teseo','galatea'],
+  proyectos:  ['ariadna','teseo','galatea','pandora'],
   contenidos: ['tematicas'],
   tematicas:  ['poetica','ciencia','filosofia'],
   contacto:[], linktree:[], polaris:[], arcana:[], grimorio:[], ayudar:[],
-  ariadna:[], teseo:[], galatea:[], poetica:[], ciencia:[], filosofia:[],
+  ariadna:[], teseo:[], galatea:[], pandora:[], poetica:[], ciencia:[], filosofia:[],
 };
 
 const PARENT = { canal: null };
@@ -515,6 +516,32 @@ const CONTENT = {
 <p>Se actualiza constantemente con todos los contenidos, incluidos los libros escritos por Proxy.</p>
 <p>Puedes colaborar <strong>preguntando y testeando el NotebookLM</strong>.</p>
 <a class="lbtn" href="https://is.gd/labyrinth_searcher" target="_blank">&#128269; Abrir Proyecto Teseo</a>`
+  },
+  pandora: {
+    color:'#fbbf24', category:'Proyectos', title:'Proyecto Pandora',
+    html:`<p><strong>Pandora</strong> es el proyecto de diseño y construcción de una máquina de neurofeedback portátil con procesadores pequeños.</p>
+<p>Las <strong>entradas</strong> son constantes vitales: ritmo cardíaco, tensión de la piel, movimiento corporal, etc. Las <strong>salidas</strong> son luces, vibraciones y sonidos para acompañar y aprender de los patrones de sueño del usuario.</p>
+<div class="hr"></div>
+<p>Objetivos:</p>
+<ul>
+<li>Ayudar a tener <strong>sueños lúcidos</strong> con distintas técnicas</li>
+<li>Acceder a patrones de <strong>trance sómnico</strong> mediante la provocación de saltos de vigilia durante el adormecimiento</li>
+</ul>
+<p>La máquina combina <strong>condicionamiento y umbrales somáticos</strong>.</p>
+<div class="hr"></div>
+<p><strong>Arquitectura:</strong></p>
+<pre style="font-family:monospace;font-size:13px;color:rgba(255,255,255,0.6);line-height:1.8">Electrodos
+   ↓
+ADS1299
+   ↓ SPI
+ESP32 o Teensy
+   ↓ USB
+Raspberry Pi
+   ↓
+Python (BrainFlow + NumPy)</pre>
+<div class="hr"></div>
+<span class="badge">En proceso</span>
+<p>Selección de entradas y sensores · Arquitectura de controlador · Arquitectura de procesador en máquina · Repositorio GitHub.</p>`
   },
   galatea: {
     color:'#fbbf24', category:'Proyectos', title:'Proyecto Galatea',
