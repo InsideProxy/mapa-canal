@@ -1223,7 +1223,41 @@ const SEPH_POS = {
   filosofia:  { x: 125, y: 135 },
 };
 
+// Auto-computes positions for nodes absent from SEPH_POS,
+// based on their parent's position and sibling index.
+// Nodes in SEPH_POS keep their manual (Kabbalistic) position.
+function computeSephPos() {
+  const result = { ...SEPH_POS };
+
+  // BFS so parents are always resolved before children
+  const queue = ['canal'];
+  const seen = new Set(['canal']);
+  while (queue.length) {
+    const pid = queue.shift();
+    (CHILDREN[pid] || []).forEach(c => {
+      if (!seen.has(c)) { seen.add(c); queue.push(c); }
+    });
+
+    if (!result[pid]) continue; // parent has no position yet — skip
+
+    const unpositioned = (CHILDREN[pid] || []).filter(c => !SEPH_POS[c]);
+    if (!unpositioned.length) continue;
+
+    const spread = (unpositioned.length - 1) * 14;
+    unpositioned.forEach((cid, i) => {
+      if (result[cid]) return; // already computed
+      result[cid] = {
+        x: Math.max(8, Math.min(152, result[pid].x - spread / 2 + i * 14)),
+        y: Math.min(170, result[pid].y + 20),
+      };
+    });
+  }
+
+  return result;
+}
+
 function buildSephiroth() {
+  const pos = computeSephPos();
   const edgesG = document.getElementById('seph-edges');
   const nodesG = document.getElementById('seph-nodes');
   edgesG.innerHTML = '';
@@ -1233,11 +1267,11 @@ function buildSephiroth() {
 
   // Draw edges
   Object.entries(CHILDREN).forEach(([pid, kids]) => {
-    if (!SEPH_POS[pid]) return;
-    const p = SEPH_POS[pid];
+    if (!pos[pid]) return;
+    const p = pos[pid];
     kids.forEach(cid => {
-      if (!SEPH_POS[cid]) return;
-      const c = SEPH_POS[cid];
+      if (!pos[cid]) return;
+      const c = pos[cid];
       const line = document.createElementNS(svgNS, 'line');
       line.setAttribute('x1', p.x);
       line.setAttribute('y1', p.y);
@@ -1250,13 +1284,14 @@ function buildSephiroth() {
   });
 
   // Draw nodes
-  Object.entries(SEPH_POS).forEach(([id, pos]) => {
+  Object.entries(pos).forEach(([id, nodePos]) => {
+    if (!NODES[id]) return;
     const cat = NODES[id].category;
     const color = SEPH_COLORS[cat] || '#fff';
 
     const circle = document.createElementNS(svgNS, 'circle');
-    circle.setAttribute('cx', pos.x);
-    circle.setAttribute('cy', pos.y);
+    circle.setAttribute('cx', nodePos.x);
+    circle.setAttribute('cy', nodePos.y);
     circle.setAttribute('r', 7);
     circle.setAttribute('fill', color);
     circle.setAttribute('fill-opacity', 0.4);
@@ -1267,8 +1302,8 @@ function buildSephiroth() {
 
     // Label
     const label = document.createElementNS(svgNS, 'text');
-    label.setAttribute('x', pos.x);
-    label.setAttribute('y', pos.y + 13);
+    label.setAttribute('x', nodePos.x);
+    label.setAttribute('y', nodePos.y + 13);
     label.classList.add('seph-label');
     label.dataset.id = id;
     label.textContent = NODES[id].label.replace('\n', ' ');
