@@ -182,6 +182,7 @@
     #p-body a:hover { text-decoration: underline; }
     #p-body ul { margin: 10px 0 17px 22px; line-height: 2.1; }
     .hr { height: 1px; background: rgba(255,255,255,0.06); margin: 22px 0; }
+    #p-body img { width: 100%; border-radius: 8px; margin-bottom: 16px; display: block; object-fit: cover; }
 
     .lbtn {
       display: inline-flex; align-items: center; gap: 8px;
@@ -418,7 +419,10 @@ const NODES = {
   ariadna:    { id:'ariadna',   label:'Proyecto\nAriadna',     category:'proyectos'  },
   teseo:      { id:'teseo',     label:'Proyecto\nTeseo',       category:'proyectos'  },
   galatea:    { id:'galatea',   label:'Proyecto\nGalatea',     category:'proyectos'  },
-  pandora:    { id:'pandora',  label:'Proyecto\nPandora',     category:'proyectos'  },
+  pandora:    { id:'pandora',       label:'Proyecto\nPandora',  category:'proyectos'  },
+  'pandora-hw':    { id:'pandora-hw',    label:'Hardware',   category:'proyectos', type:'card', image:'img/neuron.png'  },
+  'pandora-esq':   { id:'pandora-esq',   label:'Esquema',    category:'proyectos', type:'card', image:'img/stars.png'   },
+  'pandora-proto': { id:'pandora-proto', label:'Prototipo',  category:'proyectos', type:'card', image:'img/alchemy.png' },
   contenidos: { id:'contenidos',label:'Contenidos\ndel Canal', category:'contenidos' },
   tematicas:  { id:'tematicas', label:'Temáticas',             category:'contenidos' },
   poetica:    { id:'poetica',   label:'Poética',               category:'contenidos' },
@@ -434,8 +438,9 @@ const CHILDREN = {
   proyectos:  ['ariadna','teseo','galatea','pandora'],
   contenidos: ['tematicas'],
   tematicas:  ['poetica','ciencia','filosofia'],
+  pandora:    ['pandora-hw','pandora-esq','pandora-proto'],
   contacto:[], linktree:[], polaris:[], arcana:[], grimorio:[], ayudar:[],
-  ariadna:[], teseo:[], galatea:[], pandora:[], poetica:[], ciencia:[], filosofia:[],
+  ariadna:[], teseo:[], galatea:[], 'pandora-hw':[], 'pandora-esq':[], 'pandora-proto':[], poetica:[], ciencia:[], filosofia:[],
 };
 
 const PARENT = { canal: null };
@@ -552,6 +557,18 @@ EDA sensor (ADC)
 <div class="hr"></div>
 <span class="badge">En proceso</span>
 <p>Selección de entradas y sensores · Arquitectura de controlador · Arquitectura de procesador en máquina · Repositorio GitHub.</p>`
+  },
+  'pandora-hw': {
+    color:'#fbbf24', category:'Proyectos', title:'Hardware — Pandora',
+    html:`<img src="img/neuron.png"><p>Componentes hardware del proyecto Pandora: sensores, microcontroladores y periféricos de salida.</p><p><em>Reemplazar con fotografía real del hardware.</em></p>`
+  },
+  'pandora-esq': {
+    color:'#fbbf24', category:'Proyectos', title:'Esquema — Pandora',
+    html:`<img src="img/stars.png"><p>Diagrama de arquitectura y conexiones del sistema: cadena de señal, protocolos (I2C, SPI, USB, WiFi/BLE) y flujo de datos.</p><p><em>Reemplazar con esquema real del sistema.</em></p>`
+  },
+  'pandora-proto': {
+    color:'#fbbf24', category:'Proyectos', title:'Prototipo — Pandora',
+    html:`<img src="img/alchemy.png"><p>Estado actual del prototipo físico de la máquina de neurofeedback portátil.</p><p><em>Reemplazar con fotografía del prototipo real.</em></p>`
   },
   galatea: {
     color:'#fbbf24', category:'Proyectos', title:'Proyecto Galatea',
@@ -711,6 +728,48 @@ const cy = cytoscape({
       }
     },
     {
+      selector: 'node[type="card"]',
+      style: {
+        'shape': 'roundrectangle',
+        'width': 130,
+        'height': 90,
+        'background-image': 'data(image)',
+        'background-fit': 'cover',
+        'background-clip': 'node',
+        'background-fill': 'solid',
+        'background-color': '#12122a',
+        'background-opacity': 1,
+        'label': 'data(label)',
+        'text-valign': 'bottom',
+        'text-halign': 'center',
+        'text-margin-y': 8,
+        'text-outline-color': 'rgba(0,0,0,0.9)',
+        'text-outline-width': 2,
+        'font-size': '9px',
+        'color': '#fff',
+        'border-width': 1,
+        'border-color': 'rgba(212,168,84,0.4)',
+        'shadow-blur': 20,
+        'shadow-color': '#b87a14',
+        'shadow-opacity': 0.3,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
+      }
+    },
+    {
+      selector: 'node[type="card"].r-child',
+      style: { 'width': 130, 'height': 90 }
+    },
+    {
+      selector: 'node[type="card"].leaf-sel',
+      style: {
+        'border-width': 2.5,
+        'border-color': 'rgba(255,255,255,0.7)',
+        'shadow-blur': 28,
+        'shadow-opacity': 0.6,
+      }
+    },
+    {
       selector: 'node.r-current',
       style: {
         'width': 97,
@@ -862,7 +921,7 @@ async function navigate(nodeId, showPanel = true) {
     const n = NODES[id];
     cy.add({
       group: 'nodes',
-      data: { id: n.id, label: n.label, category: n.category },
+      data: { id: n.id, label: n.label, category: n.category, type: n.type || '', image: n.image || 'none' },
       classes: roleClass,
       position: pos[id],
       style: { opacity: 0 },
@@ -1009,16 +1068,20 @@ function ambientLoop(timestamp) {
     const cur = leaf.length ? leaf : cy.nodes('.r-current');
     if (cur.length && cur.inside()) {
       const sin18 = Math.sin(t * 1.8);
-      const baseSize = leaf.length ? 78 : 95;
-      const range = leaf.length ? 4 : 6;
-      const size = Math.round(baseSize + range * sin18);
-      cur.style({
+      const isCard = cur.data('type') === 'card';
+      const styleUpdate = {
         'shadow-opacity': Math.round((0.4 + 0.25 * sin18) * 100) / 100,
         'shadow-blur': Math.round(28 + 14 * sin18),
         'border-opacity': Math.round((0.3 + 0.2 * sin18) * 100) / 100,
-        'width': size,
-        'height': size,
-      });
+      };
+      if (!isCard) {
+        const baseSize = leaf.length ? 78 : 95;
+        const range = leaf.length ? 4 : 6;
+        const size = Math.round(baseSize + range * sin18);
+        styleUpdate['width'] = size;
+        styleUpdate['height'] = size;
+      }
+      cur.style(styleUpdate);
     }
 
     // Gentle float on child nodes
