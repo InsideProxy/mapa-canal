@@ -233,14 +233,14 @@
       -webkit-backdrop-filter: blur(20px);
     }
     #legend h4 {
-      font-size: 9px;
+      font-size: 11px;
       letter-spacing: 2.5px;
       text-transform: uppercase;
       color: rgba(255,255,255,0.2);
       margin-bottom: 10px;
       font-weight: 600;
     }
-    .li { display: flex; align-items: center; gap: 9px; font-size: 11px; color: rgba(255,255,255,0.35); margin-bottom: 7px; font-weight: 500; }
+    .li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: rgba(255,255,255,0.35); margin-bottom: 7px; font-weight: 500; }
     .li:last-child { margin-bottom: 0; }
     .ld {
       width: 8px; height: 8px;
@@ -295,7 +295,7 @@
     }
     #sephiroth .seph-label {
       font-family: 'Inter', sans-serif;
-      font-size: 6px;
+      font-size: 8px;
       fill: rgba(255,255,255,0.3);
       text-anchor: middle;
       pointer-events: none;
@@ -662,11 +662,12 @@ const cy = cytoscape({
         'text-valign': 'center',
         'text-halign': 'center',
         'shape': 'rectangle',
-        'font-family': '"JetBrains Mono", "Inter", system-ui, sans-serif',
-        'font-size': '10px',
+        'font-family': '"Inter", system-ui, sans-serif',
+        'font-size': '9px',
         'font-weight': '600',
         'color': '#fff',
-        'text-outline-width': 2.5,
+        'text-outline-width': 2,
+        'text-max-width': '62px',
         'width': 79, 'height': 79,
         'border-width': 0,
         'cursor': 'pointer',
@@ -813,6 +814,20 @@ const cy = cytoscape({
       style: { 'width': 79, 'height': 79 }
     },
     {
+      selector: 'node.r-distant',
+      style: {
+        'width': 30, 'height': 30,
+        'font-size': '7px',
+        'text-max-width': '28px',
+        'background-opacity': 0.2,
+        'color': 'rgba(255,255,255,0.25)',
+        'text-outline-color': 'rgba(0,0,0,0.4)',
+        'text-outline-width': 1,
+        'shadow-opacity': 0.04,
+        'border-width': 0,
+      }
+    },
+    {
       selector: 'node.leaf-sel',
       style: {
         'border-width': 3,
@@ -824,8 +839,8 @@ const cy = cytoscape({
     {
       selector: 'edge',
       style: {
-        'width': 1.5,
-        'line-color': 'rgba(255,255,255,0.08)',
+        'width': 2,
+        'line-color': 'rgba(120,200,255,0.45)',
         'curve-style': 'bezier',
         'target-arrow-shape': 'none',
       }
@@ -835,17 +850,25 @@ const cy = cytoscape({
       style: {
         'line-style': 'dashed',
         'line-dash-pattern': [6, 6],
-        'line-color': 'rgba(255,255,255,0.05)',
-        'width': 1,
+        'line-color': 'rgba(180,160,255,0.35)',
+        'width': 1.5,
       }
     },
     {
       selector: 'edge.e-down',
       style: {
-        'line-color': 'rgba(255,255,255,0.12)',
+        'line-color': 'rgba(140,220,255,0.85)',
         'target-arrow-shape': 'triangle',
-        'target-arrow-color': 'rgba(255,255,255,0.12)',
-        'width': 1.5,
+        'target-arrow-color': 'rgba(140,220,255,0.85)',
+        'width': 2.5,
+      }
+    },
+    {
+      selector: 'edge.e-distant',
+      style: {
+        'line-color': 'rgba(255,255,255,0.05)',
+        'width': 0.8,
+        'target-arrow-shape': 'none',
       }
     },
   ],
@@ -901,6 +924,39 @@ function resolveCategory(nodeId) {
 }
 
 // ════════════════════════════════════════════════════════
+//  BUILD FULL GRAPH (called once at boot)
+// ════════════════════════════════════════════════════════
+
+function buildFullGraph() {
+  Object.values(NODES).forEach(n => {
+    cy.add({
+      group: 'nodes',
+      data: { id: n.id, label: n.label, category: n.category, type: n.type || '', image: n.image || 'none' },
+      classes: 'r-distant',
+      style: { opacity: 0 },
+    });
+  });
+  Object.entries(CHILDREN).forEach(([parent, children]) => {
+    children.forEach(child => {
+      cy.add({
+        group: 'edges',
+        data: { id: `e-${parent}-${child}`, source: parent, target: child },
+        classes: 'e-distant',
+        style: { opacity: 0 },
+      });
+    });
+  });
+  cy.layout({
+    name: 'breadthfirst',
+    roots: ['canal'],
+    directed: true,
+    spacingFactor: 1.8,
+    padding: 80,
+    avoidOverlap: true,
+  }).run();
+}
+
+// ════════════════════════════════════════════════════════
 //  NAVIGATE
 // ════════════════════════════════════════════════════════
 
@@ -912,61 +968,65 @@ async function navigate(nodeId, showPanel = true) {
   }
 
   busy = true;
+  stopAmbient();
 
   const parentId = PARENT[nodeId];
   const childIds = CHILDREN[nodeId] || [];
-  const pos      = positions(parentId, nodeId, childIds);
+  const isFirst  = currentId === null;
 
-  // Switch background based on category
   switchBackground(resolveCategory(nodeId));
 
-  // 1 — stop ambient + fade out
-  stopAmbient();
-  const cur = cy.elements();
-  if (cur.length > 0) {
-    cur.stop();
-    await new Promise(r => cur.animate({ style:{ opacity:0 } }, { duration:180, complete:r }));
-    cur.remove();
-  }
-
-  // 2 — add nodes
-  const allIds = [nodeId, ...childIds, ...(parentId ? [parentId] : [])];
-  allIds.forEach(id => {
-    const roleClass = id === nodeId ? 'r-current' : id === parentId ? 'r-parent' : 'r-child';
-    const n = NODES[id];
-    cy.add({
-      group: 'nodes',
-      data: { id: n.id, label: n.label, category: n.category, type: n.type || '', image: n.image || 'none' },
-      classes: roleClass,
-      position: pos[id],
-      style: { opacity: 0 },
-    });
+  // ── Reclassify nodes ──
+  cy.nodes().removeClass('r-current r-parent r-child r-distant leaf-sel');
+  cy.getElementById(nodeId).addClass('r-current');
+  if (parentId) cy.getElementById(parentId).addClass('r-parent');
+  childIds.forEach(id => cy.getElementById(id).addClass('r-child'));
+  cy.nodes().forEach(n => {
+    if (!n.hasClass('r-current') && !n.hasClass('r-parent') && !n.hasClass('r-child')) {
+      n.addClass('r-distant');
+    }
   });
 
-  // 3 — add edges
-  if (parentId) {
-    cy.add({ group:'edges', data:{ id:'e-up', source:parentId, target:nodeId }, classes:'e-up', style:{ opacity:0 } });
-  }
-  childIds.forEach((cid, i) => {
-    cy.add({ group:'edges', data:{ id:`e-d${i}`, source:nodeId, target:cid }, classes:'e-down', style:{ opacity:0 } });
+  // ── Reclassify edges ──
+  cy.edges().removeClass('e-up e-down e-distant');
+  cy.edges().forEach(edge => {
+    const src = edge.data('source');
+    const tgt = edge.data('target');
+    const connectsCurrent = src === nodeId || tgt === nodeId;
+    if (!connectsCurrent) { edge.addClass('e-distant'); return; }
+    const other = src === nodeId ? tgt : src;
+    if (other === parentId) edge.addClass('e-up');
+    else if (childIds.includes(other)) edge.addClass('e-down');
+    else edge.addClass('e-distant');
   });
 
-  // 4 — fit
-  cy.fit(cy.elements(), 90);
+  // ── Fit to active cluster ──
+  const activeEles = cy.nodes('.r-current, .r-child, .r-parent');
+  if (isFirst) {
+    cy.fit(activeEles, 100);
+  } else {
+    cy.animate({ fit: { eles: activeEles, padding: 100 } }, { duration: 420 });
+  }
 
-  // 5 — fade in
+  // ── Animate opacity ──
   const DUR = 420;
-  const anims = [
-    new Promise(r => cy.nodes('.r-current').animate({ style:{ opacity:1 } }, { duration:DUR, complete:r })),
-  ];
-  const ch = cy.nodes('.r-child');
-  const de = cy.edges('.e-down');
-  if (ch.length) anims.push(new Promise(r => ch.animate({ style:{ opacity:1 } }, { duration:DUR, complete:r })));
-  if (de.length) anims.push(new Promise(r => de.animate({ style:{ opacity:0.75 } }, { duration:DUR, complete:r })));
-  if (parentId) {
-    anims.push(new Promise(r => cy.nodes('.r-parent').animate({ style:{ opacity:0.42 } }, { duration:DUR, complete:r })));
-    anims.push(new Promise(r => cy.edges('.e-up'   ).animate({ style:{ opacity:0.22 } }, { duration:DUR, complete:r })));
-  }
+  const anims = [];
+  const rCur  = cy.nodes('.r-current');
+  const rCh   = cy.nodes('.r-child');
+  const rPar  = cy.nodes('.r-parent');
+  const rDist = cy.nodes('.r-distant');
+  const eDn   = cy.edges('.e-down');
+  const eUp   = cy.edges('.e-up');
+  const eDist = cy.edges('.e-distant');
+
+  if (rCur.length)  anims.push(new Promise(r => rCur .animate({ style:{ opacity:1    } }, { duration:DUR, complete:r })));
+  if (rCh.length)   anims.push(new Promise(r => rCh  .animate({ style:{ opacity:1    } }, { duration:DUR, complete:r })));
+  if (rPar.length)  anims.push(new Promise(r => rPar .animate({ style:{ opacity:0.42 } }, { duration:DUR, complete:r })));
+  if (rDist.length) anims.push(new Promise(r => rDist.animate({ style:{ opacity:0.18 } }, { duration:DUR, complete:r })));
+  if (eDn.length)   anims.push(new Promise(r => eDn  .animate({ style:{ opacity:0.8  } }, { duration:DUR, complete:r })));
+  if (eUp.length)   anims.push(new Promise(r => eUp  .animate({ style:{ opacity:0.3  } }, { duration:DUR, complete:r })));
+  if (eDist.length) anims.push(new Promise(r => eDist.animate({ style:{ opacity:0.08 } }, { duration:DUR, complete:r })));
+
   await Promise.all(anims);
 
   currentId = nodeId;
@@ -1375,6 +1435,7 @@ buildSephiroth();
 //  BOOT
 // ════════════════════════════════════════════════════════
 
+buildFullGraph();
 navigate('canal', false);
 </script>
 </body>
