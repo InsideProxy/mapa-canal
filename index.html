@@ -9,234 +9,140 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
     :root {
-      --bg: #020208;
-      --surface: rgba(3,3,14,0.9);
-      --border: rgba(0,210,255,0.07);
-      --border-hi: rgba(0,210,255,0.22);
-      --text: #bfd0e0;
+      --bg:       #020208;
+      --border:   rgba(0,210,255,0.08);
+      --border-hi:rgba(0,210,255,0.20);
+      --text:     #bfd0e0;
       --text-dim: rgba(191,208,224,0.38);
-      --c-root: #a855f7;
-      --c-proxy: #22d3ee;
-      --c-proj:  #fb923c;
-      --c-cont:  #4ade80;
-      --mono: 'JetBrains Mono', 'Courier New', monospace;
+      --c-root:   #a855f7;
+      --c-proxy:  #22d3ee;
+      --c-proj:   #fb923c;
+      --c-cont:   #4ade80;
+      --mono:     'JetBrains Mono', monospace;
     }
 
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      overflow: hidden;
-      font-size: 12px;
-    }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden; font-size:12px; }
 
-    /* ── GRID ──────────────────────────────────── */
-    #grid {
-      position: fixed; inset: 0; z-index: 1; pointer-events: none;
-      background-image:
-        linear-gradient(rgba(0,210,255,0.022) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,210,255,0.022) 1px, transparent 1px);
-      background-size: 44px 44px;
-    }
+    /* Rejilla de fondo */
+    #grid { position:fixed; inset:0; z-index:1; pointer-events:none;
+      background-image: linear-gradient(rgba(0,210,255,.022) 1px,transparent 1px),
+                        linear-gradient(90deg,rgba(0,210,255,.022) 1px,transparent 1px);
+      background-size:44px 44px; }
 
-    /* ── BACKGROUND ────────────────────────────── */
-    .bg-layer {
-      position: fixed; inset: 0;
-      background-size: cover; background-position: center;
-      transition: opacity 1.2s cubic-bezier(0.4,0,0.2,1);
-      opacity: 0; z-index: 0;
-    }
-    .bg-layer.active { opacity: 1; }
-    .bg-overlay {
-      position: fixed; inset: 0;
-      background: radial-gradient(ellipse at 50% 35%, rgba(2,2,10,0.45) 0%, rgba(2,2,10,0.92) 75%);
-      z-index: 1;
-    }
+    /* Fondos por categoría */
+    .bg-layer { position:fixed; inset:0; background-size:cover; background-position:center; transition:opacity 1.2s ease; opacity:0; z-index:0; }
+    .bg-layer.active { opacity:1; }
+    .bg-overlay { position:fixed; inset:0; background:radial-gradient(ellipse at 40% 35%,rgba(2,2,10,.4) 0%,rgba(2,2,10,.92) 75%); z-index:1; }
 
-    /* ── PARTICLES ─────────────────────────────── */
-    #particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
-    .particle {
-      position: absolute; width: 1px; height: 1px;
-      background: rgba(0,210,255,0.35);
-      animation: pfloat linear infinite;
-    }
-    @keyframes pfloat {
-      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: 1; }
-      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-    }
+    /* Partículas */
+    #particles { position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden; }
+    .particle { position:absolute; width:1px; height:1px; background:rgba(0,210,255,.32); animation:pfloat linear infinite; }
+    @keyframes pfloat { 0%{transform:translateY(100vh) scale(0);opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{transform:translateY(-10vh) scale(1);opacity:0} }
 
-    /* ── CY ────────────────────────────────────── */
-    #cy { position: fixed; inset: 40px 0 0 0; z-index: 3; background: transparent; }
+    /* Cytoscape */
+    #cy { position:fixed; inset:40px 0 0 0; z-index:3; background:transparent; }
 
-    /* ── TOPBAR ────────────────────────────────── */
+    /* Barra superior */
     #topbar {
-      position: fixed; top: 0; left: 0; right: 0; height: 40px;
-      background: rgba(2,2,12,0.82);
-      border-bottom: 1px solid var(--border-hi);
-      backdrop-filter: blur(20px);
-      display: flex; align-items: center; padding: 0 12px; gap: 10px;
-      z-index: 200;
+      position:fixed; top:0; left:0; right:0; height:40px;
+      background:rgba(2,2,12,.85); border-bottom:1px solid var(--border-hi);
+      backdrop-filter:blur(20px); display:flex; align-items:center;
+      padding:0 14px; gap:10px; z-index:200;
     }
-    #topbar-logo {
-      font-family: var(--mono); font-size: 10px; font-weight: 500;
-      color: var(--c-proxy); letter-spacing: 3px; text-transform: uppercase;
-      white-space: nowrap; flex-shrink: 0;
-      text-shadow: 0 0 14px var(--c-proxy);
-    }
-    .t-sep { width: 1px; height: 16px; background: var(--border-hi); flex-shrink: 0; }
-    #breadcrumb {
-      display: flex; align-items: center; gap: 4px;
-      font-size: 10px; font-weight: 500; overflow: hidden; flex: 1;
-      font-family: var(--mono);
-    }
-    .bc { color: rgba(191,208,224,0.22); white-space: nowrap; cursor: pointer; transition: color 0.2s; }
-    .bc:hover { color: var(--c-proxy); }
-    .bc.cur { color: rgba(191,208,224,0.65); cursor: default; }
-    .bc-sep { color: var(--border-hi); }
-    #btn-edit {
-      background: transparent; border: 1px solid var(--border-hi);
-      color: var(--c-proxy); font-family: var(--mono); font-size: 9px;
-      padding: 3px 8px; cursor: pointer; letter-spacing: 1px; flex-shrink: 0;
-      transition: background 0.2s; text-transform: uppercase;
-    }
-    #btn-edit:hover { background: rgba(0,210,255,0.08); }
-    #topbar-hint { font-size: 9px; color: rgba(191,208,224,0.14); white-space: nowrap; flex-shrink: 0; font-family: var(--mono); }
+    #topbar-logo { font-family:var(--mono); font-size:10px; color:var(--c-proxy); letter-spacing:3px; text-transform:uppercase; flex-shrink:0; text-shadow:0 0 14px var(--c-proxy); }
+    .t-sep { width:1px; height:16px; background:var(--border-hi); flex-shrink:0; }
+    #breadcrumb { display:flex; align-items:center; gap:4px; font-size:10px; overflow:hidden; flex:1; font-family:var(--mono); }
+    .bc { color:rgba(191,208,224,.22); white-space:nowrap; cursor:pointer; transition:color .2s; }
+    .bc:hover { color:var(--c-proxy); }
+    .bc.cur { color:rgba(191,208,224,.65); cursor:default; }
+    .bc-sep { color:var(--border-hi); }
+    #topbar-hint { font-size:9px; color:rgba(191,208,224,.14); white-space:nowrap; flex-shrink:0; font-family:var(--mono); }
 
-    /* ── PANEL (content, right) ────────────────── */
+    /* Panel lateral derecho */
     #panel {
-      position: fixed; top: 40px; right: 0; bottom: 0;
-      width: 275px;
-      background: rgba(3,3,16,0.9);
-      border-left: 1px solid var(--border-hi);
-      backdrop-filter: blur(28px);
-      transform: translateX(100%);
-      transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
-      z-index: 150; overflow-y: auto;
-      scrollbar-width: thin; scrollbar-color: rgba(0,210,255,0.08) transparent;
+      position:fixed; top:40px; right:0; bottom:0; width:270px;
+      background:rgba(3,3,16,.92); border-left:1px solid var(--border-hi);
+      backdrop-filter:blur(28px);
+      transform:translateX(100%); transition:transform .32s cubic-bezier(.4,0,.2,1);
+      z-index:150; overflow-y:auto;
+      scrollbar-width:thin; scrollbar-color:rgba(0,210,255,.08) transparent;
     }
-    #panel.open { transform: translateX(0); }
-    #panel-inner { padding: 20px 18px 50px; }
+    #panel.open { transform:translateX(0); }
+    #panel-inner { padding:20px 18px 56px; }
+
     #btn-close {
-      position: absolute; top: 9px; right: 9px;
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-dim); width: 22px; height: 22px;
-      cursor: pointer; font-size: 10px; font-family: var(--mono);
-      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+      position:absolute; top:10px; right:10px;
+      background:transparent; border:1px solid var(--border);
+      color:var(--text-dim); width:22px; height:22px;
+      cursor:pointer; font-size:10px; font-family:var(--mono);
+      display:flex; align-items:center; justify-content:center; transition:all .2s;
     }
-    #btn-close:hover { border-color: var(--c-proxy); color: var(--c-proxy); }
-    #p-cat { font-family: var(--mono); font-size: 8px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 7px; }
-    #p-title { font-size: 17px; font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 14px; }
-    #p-body { font-size: 11px; line-height: 1.85; color: rgba(191,208,224,0.58); }
-    #p-body p { margin-bottom: 11px; }
-    #p-body p:last-child { margin-bottom: 0; }
-    #p-body strong { color: rgba(191,208,224,0.88); }
-    #p-body em { color: rgba(191,208,224,0.72); }
-    #p-body a { color: var(--c-proxy); text-decoration: none; }
-    #p-body a:hover { text-decoration: underline; }
-    #p-body ul { margin: 7px 0 11px 16px; line-height: 1.95; }
-    #p-body pre { font-family: var(--mono); font-size: 9px; color: rgba(191,208,224,0.48); line-height: 1.7; background: rgba(0,210,255,0.03); border: 1px solid var(--border); padding: 9px 10px; margin: 9px 0; overflow-x: auto; white-space: pre; }
-    .hr { height: 1px; background: var(--border); margin: 14px 0; }
-    #p-body img { width: 100%; margin-bottom: 11px; display: block; object-fit: cover; border: 1px solid var(--border); }
+    #btn-close:hover { border-color:var(--c-proxy); color:var(--c-proxy); }
+
+    #p-cat   { font-family:var(--mono); font-size:8px; letter-spacing:3px; text-transform:uppercase; margin-bottom:7px; }
+    #p-title { font-size:17px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; }
+    #p-body  { font-size:11px; line-height:1.88; color:rgba(191,208,224,.6); }
+    #p-body p { margin-bottom:11px; }
+    #p-body p:last-child { margin-bottom:0; }
+    #p-body strong { color:rgba(191,208,224,.9); }
+    #p-body em     { color:rgba(191,208,224,.74); }
+    #p-body a      { color:var(--c-proxy); text-decoration:none; }
+    #p-body a:hover{ text-decoration:underline; }
+    #p-body ul  { margin:7px 0 11px 16px; line-height:2; }
+    #p-body pre { font-family:var(--mono); font-size:9px; color:rgba(191,208,224,.5); line-height:1.7;
+                  background:rgba(0,210,255,.03); border:1px solid var(--border);
+                  padding:9px 10px; margin:9px 0; overflow-x:auto; white-space:pre; }
+    .hr { height:1px; background:var(--border); margin:14px 0; }
+    #p-body img { width:100%; margin-bottom:11px; display:block; object-fit:cover; border:1px solid var(--border); }
+
     .lbtn {
-      display: inline-flex; align-items: center; gap: 5px;
-      margin-top: 9px; padding: 6px 12px;
-      background: rgba(0,210,255,0.04); border: 1px solid rgba(0,210,255,0.18);
-      color: var(--c-proxy) !important; font-size: 10px; font-family: var(--mono);
-      text-decoration: none !important; transition: all 0.2s;
+      display:inline-flex; align-items:center; gap:5px;
+      margin-top:9px; padding:6px 12px;
+      background:rgba(0,210,255,.04); border:1px solid rgba(0,210,255,.18);
+      color:var(--c-proxy) !important; font-size:10px; font-family:var(--mono);
+      text-decoration:none !important; transition:all .2s;
     }
-    .lbtn:hover { background: rgba(0,210,255,0.09) !important; border-color: rgba(0,210,255,0.38); }
+    .lbtn:hover { background:rgba(0,210,255,.1) !important; border-color:rgba(0,210,255,.38); }
+
     .badge {
-      display: inline-block; padding: 2px 8px;
-      font-family: var(--mono); font-size: 8px; font-weight: 700;
-      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 9px;
-      background: rgba(0,210,255,0.05); color: var(--c-proxy);
-      border: 1px solid rgba(0,210,255,0.18);
+      display:inline-block; padding:2px 8px;
+      font-family:var(--mono); font-size:8px; font-weight:700;
+      letter-spacing:2px; text-transform:uppercase; margin-bottom:9px;
+      background:rgba(0,210,255,.05); color:var(--c-proxy); border:1px solid rgba(0,210,255,.18);
     }
 
-    /* ── EDITOR PANEL (left) ───────────────────── */
-    #editor {
-      position: fixed; top: 40px; left: 0; bottom: 0;
-      width: 270px;
-      background: rgba(2,2,13,0.96);
-      border-right: 1px solid var(--border-hi);
-      backdrop-filter: blur(28px);
-      transform: translateX(-100%);
-      transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
-      z-index: 160; overflow-y: auto;
-      scrollbar-width: thin; scrollbar-color: rgba(0,210,255,0.08) transparent;
-    }
-    #editor.open { transform: translateX(0); }
-    #editor-inner { padding: 12px 12px 50px; }
-    .ed-head { font-family: var(--mono); font-size: 10px; color: #fff; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border-hi); }
-    .ed-sec { margin-bottom: 14px; }
-    .ed-lbl { display: block; font-family: var(--mono); font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-proxy); margin-bottom: 4px; }
-    .ed-lbl.dim { color: var(--text-dim); letter-spacing: 0; text-transform: none; font-size: 9px; }
-    .ed-in, .ed-sel, .ed-ta {
-      width: 100%; background: rgba(0,210,255,0.03); border: 1px solid var(--border);
-      color: var(--text); font-family: var(--mono); font-size: 10px; padding: 5px 7px;
-      transition: border-color 0.2s; resize: vertical;
-    }
-    .ed-in:focus, .ed-sel:focus, .ed-ta:focus { outline: none; border-color: rgba(0,210,255,0.38); }
-    .ed-ta { min-height: 100px; }
-    .ed-sel option { background: #04040e; }
-    .ed-btn {
-      display: inline-block; padding: 4px 10px;
-      background: rgba(0,210,255,0.04); border: 1px solid rgba(0,210,255,0.18);
-      color: var(--c-proxy); font-family: var(--mono); font-size: 9px;
-      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
-      transition: all 0.2s; margin-top: 5px;
-    }
-    .ed-btn:hover { background: rgba(0,210,255,0.1); }
-    .ed-btn.del { color: #f87171; border-color: rgba(248,113,113,0.25); }
-    .ed-btn.del:hover { background: rgba(248,113,113,0.08); }
-    .ed-btn.ok { color: var(--c-cont); border-color: rgba(74,222,128,0.25); }
-    .ed-btn.ok:hover { background: rgba(74,222,128,0.08); }
-    .ed-div { height: 1px; background: var(--border); margin: 12px 0; }
-    .ed-nodelist { max-height: 130px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0,210,255,0.08) transparent; margin-bottom: 4px; }
-    .ed-ni { padding: 3px 7px; font-family: var(--mono); font-size: 9px; color: var(--text-dim); cursor: pointer; transition: all 0.12s; border-left: 2px solid transparent; }
-    .ed-ni:hover { color: var(--text); background: rgba(0,210,255,0.04); }
-    .ed-ni.on { border-left-color: var(--c-proxy); color: var(--c-proxy); background: rgba(0,210,255,0.06); }
-    #ed-msg { font-family: var(--mono); font-size: 9px; color: var(--c-cont); margin-top: 5px; min-height: 14px; }
-
-    /* ── LEGEND ────────────────────────────────── */
+    /* Leyenda */
     #legend {
-      position: fixed; bottom: 212px; left: 10px;
-      background: rgba(2,2,12,0.72); border: 1px solid var(--border);
-      padding: 9px 13px; z-index: 100; backdrop-filter: blur(18px);
+      position:fixed; bottom:212px; left:10px;
+      background:rgba(2,2,12,.72); border:1px solid var(--border);
+      padding:9px 13px; z-index:100; backdrop-filter:blur(18px);
     }
-    #legend h4 { font-family: var(--mono); font-size: 7px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(191,208,224,0.2); margin-bottom: 7px; }
-    .li { display: flex; align-items: center; gap: 6px; font-size: 9px; color: rgba(191,208,224,0.32); margin-bottom: 4px; }
-    .li:last-child { margin-bottom: 0; }
-    .ld { width: 6px; height: 6px; flex-shrink: 0; box-shadow: 0 0 5px currentColor; }
+    #legend h4 { font-family:var(--mono); font-size:7px; letter-spacing:2.5px; text-transform:uppercase; color:rgba(191,208,224,.2); margin-bottom:7px; }
+    .li { display:flex; align-items:center; gap:6px; font-size:9px; color:rgba(191,208,224,.32); margin-bottom:4px; }
+    .li:last-child { margin-bottom:0; }
+    .ld { width:6px; height:6px; flex-shrink:0; box-shadow:0 0 5px currentColor; }
 
-    /* ── SEPHIROTH ─────────────────────────────── */
-    #sephiroth {
-      position: fixed; bottom: 10px; left: 10px;
-      width: 160px; height: 195px; z-index: 100;
-      pointer-events: auto; opacity: 0.38; transition: opacity 0.4s;
-    }
-    #sephiroth:hover { opacity: 0.9; }
-    #sephiroth line { stroke: rgba(0,210,255,0.07); stroke-width: 1; transition: stroke 0.4s; }
-    #sephiroth line.path-active { stroke: rgba(0,210,255,0.28); stroke-width: 1.5; }
-    #sephiroth circle { cursor: pointer; transition: r 0.3s, fill-opacity 0.3s; }
-    #sephiroth circle:hover { r: 8; fill-opacity: 1; }
-    #sephiroth .seph-active { r: 8; fill-opacity: 1; filter: drop-shadow(0 0 5px currentColor); }
-    #sephiroth .seph-label { font-family: var(--mono); font-size: 5.5px; fill: rgba(191,208,224,0.22); text-anchor: middle; pointer-events: none; }
-    #sephiroth .seph-label.label-active { fill: rgba(191,208,224,0.82); }
+    /* Minimapa sephiroth */
+    #sephiroth { position:fixed; bottom:10px; left:10px; width:160px; height:195px; z-index:100; pointer-events:auto; opacity:.38; transition:opacity .4s; }
+    #sephiroth:hover { opacity:.9; }
+    #sephiroth line { stroke:rgba(0,210,255,.07); stroke-width:1; transition:stroke .4s; }
+    #sephiroth line.path-active { stroke:rgba(0,210,255,.28); stroke-width:1.5; }
+    #sephiroth circle { cursor:pointer; transition:r .3s,fill-opacity .3s; }
+    #sephiroth circle:hover { r:8; fill-opacity:1; }
+    #sephiroth .seph-active { r:8; fill-opacity:1; filter:drop-shadow(0 0 5px currentColor); }
+    #sephiroth .seph-label { font-family:var(--mono); font-size:5.5px; fill:rgba(191,208,224,.22); text-anchor:middle; pointer-events:none; }
+    #sephiroth .seph-label.label-active { fill:rgba(191,208,224,.82); }
   </style>
 </head>
 <body>
 
 <div id="grid"></div>
-<div class="bg-layer" id="bg-root"      style="background-image:url('img/stars.png')"></div>
-<div class="bg-layer" id="bg-proxy"     style="background-image:url('img/neuron.png')"></div>
-<div class="bg-layer" id="bg-proyectos" style="background-image:url('img/alchemy.png')"></div>
+<div class="bg-layer" id="bg-root"       style="background-image:url('img/stars.png')"></div>
+<div class="bg-layer" id="bg-proxy"      style="background-image:url('img/neuron.png')"></div>
+<div class="bg-layer" id="bg-proyectos"  style="background-image:url('img/alchemy.png')"></div>
 <div class="bg-layer" id="bg-contenidos" style="background-image:url('img/library.png')"></div>
 <div class="bg-overlay"></div>
 <div id="particles"></div>
@@ -245,82 +151,17 @@
   <span id="topbar-logo">PROXY</span>
   <div class="t-sep"></div>
   <div id="breadcrumb"></div>
-  <button id="btn-edit" onclick="toggleEditor()">[EDIT]</button>
-  <span id="topbar-hint">click nodo → info</span>
+  <span id="topbar-hint">haz clic en un nodo</span>
 </div>
 
 <div id="cy"></div>
 
-<!-- Panel de contenido (derecha) -->
 <div id="panel">
   <div id="panel-inner">
     <button id="btn-close" onclick="closePanel()">✕</button>
     <div id="p-cat"></div>
     <div id="p-title"></div>
     <div id="p-body"></div>
-  </div>
-</div>
-
-<!-- Panel de edición (izquierda) -->
-<div id="editor">
-  <div id="editor-inner">
-    <div class="ed-head">// EDITOR DE NODOS</div>
-
-    <div class="ed-sec">
-      <span class="ed-lbl">Nodos</span>
-      <div class="ed-nodelist" id="ed-list"></div>
-    </div>
-
-    <div class="ed-div"></div>
-
-    <div class="ed-sec">
-      <span class="ed-lbl">Editar seleccionado</span>
-      <span class="ed-lbl dim">ID: <span id="ed-sel-id">—</span></span>
-      <span class="ed-lbl" style="margin-top:6px">Label</span>
-      <input class="ed-in" id="ed-label" type="text" placeholder="Label del nodo">
-      <span class="ed-lbl" style="margin-top:6px">Categoría</span>
-      <select class="ed-sel" id="ed-category">
-        <option value="root">root</option>
-        <option value="proxy">proxy</option>
-        <option value="proyectos">proyectos</option>
-        <option value="contenidos">contenidos</option>
-      </select>
-      <span class="ed-lbl" style="margin-top:6px">Título del panel</span>
-      <input class="ed-in" id="ed-title" type="text" placeholder="Título visible">
-      <span class="ed-lbl" style="margin-top:6px">Contenido HTML</span>
-      <textarea class="ed-ta" id="ed-html" placeholder="<p>Texto...</p>"></textarea>
-      <div>
-        <button class="ed-btn ok" onclick="saveEdit()">Guardar</button>
-        <button class="ed-btn del" onclick="deleteNode()" style="margin-left:5px">Eliminar</button>
-      </div>
-    </div>
-
-    <div class="ed-div"></div>
-
-    <div class="ed-sec">
-      <span class="ed-lbl">Añadir nodo</span>
-      <span class="ed-lbl" style="margin-top:4px">ID (sin espacios)</span>
-      <input class="ed-in" id="ed-new-id" type="text" placeholder="mi-nodo">
-      <span class="ed-lbl" style="margin-top:5px">Label</span>
-      <input class="ed-in" id="ed-new-label" type="text" placeholder="Mi Nodo">
-      <span class="ed-lbl" style="margin-top:5px">Padre</span>
-      <select class="ed-sel" id="ed-new-parent"></select>
-      <span class="ed-lbl" style="margin-top:5px">Categoría</span>
-      <select class="ed-sel" id="ed-new-cat">
-        <option value="root">root</option>
-        <option value="proxy">proxy</option>
-        <option value="proyectos">proyectos</option>
-        <option value="contenidos">contenidos</option>
-      </select>
-      <button class="ed-btn" onclick="addNode()" style="margin-top:7px">+ Añadir</button>
-    </div>
-
-    <div class="ed-div"></div>
-
-    <div class="ed-sec">
-      <button class="ed-btn del" onclick="resetAll()">↺ Resetear todo</button>
-      <div id="ed-msg"></div>
-    </div>
   </div>
 </div>
 
@@ -339,65 +180,65 @@
 
 <script>
 // ════════════════════════════════════════════════════════
-//  PARTICLES
+//  PARTÍCULAS
 // ════════════════════════════════════════════════════════
-(function() {
+(function(){
   const c = document.getElementById('particles');
-  for (let i = 0; i < 28; i++) {
+  for (let i=0;i<28;i++){
     const p = document.createElement('div');
-    p.className = 'particle';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.animationDuration = (14 + Math.random() * 26) + 's';
-    p.style.animationDelay   = (Math.random() * 22) + 's';
-    const s = (0.8 + Math.random() * 1.4) + 'px';
+    p.className='particle';
+    p.style.left = Math.random()*100+'%';
+    p.style.animationDuration = (14+Math.random()*26)+'s';
+    p.style.animationDelay   = (Math.random()*22)+'s';
+    const s = (.8+Math.random()*1.4)+'px';
     p.style.width = p.style.height = s;
     c.appendChild(p);
   }
 })();
 
 // ════════════════════════════════════════════════════════
-//  BACKGROUND
+//  FONDO POR CATEGORÍA
 // ════════════════════════════════════════════════════════
-const BG_MAP = { root:'bg-root', proxy:'bg-proxy', proyectos:'bg-proyectos', contenidos:'bg-contenidos' };
+const BG_MAP = {root:'bg-root',proxy:'bg-proxy',proyectos:'bg-proyectos',contenidos:'bg-contenidos'};
 let currentBg = null;
-function switchBg(cat) {
-  const id = BG_MAP[cat] || BG_MAP.root;
-  if (id === currentBg) return;
-  document.querySelectorAll('.bg-layer').forEach(el => el.classList.remove('active'));
+function switchBg(cat){
+  const id = BG_MAP[cat]||BG_MAP.root;
+  if(id===currentBg) return;
+  document.querySelectorAll('.bg-layer').forEach(el=>el.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   currentBg = id;
 }
 
 // ════════════════════════════════════════════════════════
-//  DATA DEFAULTS
+//  DATOS — edita aquí para actualizar el mapa
 // ════════════════════════════════════════════════════════
-const ND = {
-  canal:         { id:'canal',         label:'El Canal',                category:'root'       },
-  proxy:         { id:'proxy',         label:'Proxy',                   category:'proxy'      },
-  autor:         { id:'autor',         label:'Sobre el\nAutor',         category:'proxy'      },
-  contacto:      { id:'contacto',      label:'Contacto',                category:'proxy'      },
-  linktree:      { id:'linktree',      label:'Linktree',                category:'proxy'      },
-  libros:        { id:'libros',        label:'Libros',                  category:'proxy'      },
-  polaris:       { id:'polaris',       label:'Polaris',                 category:'proxy'      },
-  arcana:        { id:'arcana',        label:'Arcana',                  category:'proxy'      },
-  grimorio:      { id:'grimorio',      label:'Grimorio del\nLaberinto', category:'proxy'      },
-  ayudar:        { id:'ayudar',        label:'Cómo\nAyudar',            category:'proxy'      },
-  proyectos:     { id:'proyectos',     label:'Proyectos',               category:'proyectos'  },
-  ariadna:       { id:'ariadna',       label:'Proyecto\nAriadna',       category:'proyectos'  },
-  teseo:         { id:'teseo',         label:'Proyecto\nTeseo',         category:'proyectos'  },
-  galatea:       { id:'galatea',       label:'Proyecto\nGalatea',       category:'proyectos'  },
-  pandora:       { id:'pandora',       label:'Proyecto\nPandora',       category:'proyectos'  },
-  'pandora-hw':  { id:'pandora-hw',    label:'Hardware',  category:'proyectos', type:'card', image:'img/neuron.png'  },
-  'pandora-esq': { id:'pandora-esq',   label:'Esquema',   category:'proyectos', type:'card', image:'img/stars.png'   },
-  'pandora-proto':{ id:'pandora-proto',label:'Prototipo', category:'proyectos', type:'card', image:'img/alchemy.png' },
-  contenidos:    { id:'contenidos',    label:'Contenidos\ndel Canal',   category:'contenidos' },
-  tematicas:     { id:'tematicas',     label:'Temáticas',               category:'contenidos' },
-  poetica:       { id:'poetica',       label:'Poética',                 category:'contenidos' },
-  ciencia:       { id:'ciencia',       label:'Ciencia',                 category:'contenidos' },
-  filosofia:     { id:'filosofia',     label:'Filosofía',               category:'contenidos' },
+const NODES = {
+  canal:         {id:'canal',         label:'El Canal',                category:'root'      },
+  proxy:         {id:'proxy',         label:'Proxy',                   category:'proxy'     },
+  autor:         {id:'autor',         label:'Sobre el\nAutor',         category:'proxy'     },
+  contacto:      {id:'contacto',      label:'Contacto',                category:'proxy'     },
+  linktree:      {id:'linktree',      label:'Linktree',                category:'proxy'     },
+  libros:        {id:'libros',        label:'Libros',                  category:'proxy'     },
+  polaris:       {id:'polaris',       label:'Polaris',                 category:'proxy'     },
+  arcana:        {id:'arcana',        label:'Arcana',                  category:'proxy'     },
+  grimorio:      {id:'grimorio',      label:'Grimorio del\nLaberinto', category:'proxy'     },
+  ayudar:        {id:'ayudar',        label:'Cómo\nAyudar',            category:'proxy'     },
+  proyectos:     {id:'proyectos',     label:'Proyectos',               category:'proyectos' },
+  ariadna:       {id:'ariadna',       label:'Proyecto\nAriadna',       category:'proyectos' },
+  teseo:         {id:'teseo',         label:'Proyecto\nTeseo',         category:'proyectos' },
+  galatea:       {id:'galatea',       label:'Proyecto\nGalatea',       category:'proyectos' },
+  pandora:       {id:'pandora',       label:'Proyecto\nPandora',       category:'proyectos' },
+  'pandora-hw':  {id:'pandora-hw',    label:'Hardware',  category:'proyectos',type:'card',image:'img/neuron.png' },
+  'pandora-esq': {id:'pandora-esq',   label:'Esquema',   category:'proyectos',type:'card',image:'img/stars.png'  },
+  'pandora-proto':{id:'pandora-proto',label:'Prototipo', category:'proyectos',type:'card',image:'img/alchemy.png'},
+  contenidos:    {id:'contenidos',    label:'Contenidos\ndel Canal',   category:'contenidos'},
+  tematicas:     {id:'tematicas',     label:'Temáticas',               category:'contenidos'},
+  poetica:       {id:'poetica',       label:'Poética',                 category:'contenidos'},
+  ciencia:       {id:'ciencia',       label:'Ciencia',                 category:'contenidos'},
+  filosofia:     {id:'filosofia',     label:'Filosofía',               category:'contenidos'},
 };
 
-const CD = {
+const CHILDREN = {
   canal:      ['proxy','proyectos','contenidos'],
   proxy:      ['autor','libros','ayudar'],
   autor:      ['contacto','linktree'],
@@ -406,676 +247,555 @@ const CD = {
   contenidos: ['tematicas'],
   tematicas:  ['poetica','ciencia','filosofia'],
   pandora:    ['pandora-hw','pandora-esq','pandora-proto'],
-  contacto:[], linktree:[], polaris:[], arcana:[], grimorio:[], ayudar:[],
-  ariadna:[], teseo:[], galatea:[],
-  'pandora-hw':[], 'pandora-esq':[], 'pandora-proto':[],
-  poetica:[], ciencia:[], filosofia:[],
+  contacto:[],linktree:[],polaris:[],arcana:[],grimorio:[],ayudar:[],
+  ariadna:[],teseo:[],galatea:[],
+  'pandora-hw':[],'pandora-esq':[],'pandora-proto':[],
+  poetica:[],ciencia:[],filosofia:[],
 };
 
-const KD = {
-  canal:    { color:'#a855f7', category:'El Canal', title:'Proxy — El Canal',
-    html:`<p>Bienvenido al mapa interactivo del canal <strong>Proxy</strong>.</p><p>Haz clic en cualquier nodo para ver su contenido. El grafo muestra toda la estructura del canal.</p>` },
-  proxy:    { color:'#22d3ee', category:'Proxy', title:'Proxy',
-    html:`<p>Sección dedicada al autor del canal, sus obras y sus medios de contacto.</p>` },
-  autor:    { color:'#22d3ee', category:'Proxy', title:'Sobre el Autor',
-    html:`<p>Proxy es <strong>Juan Boza Samanes</strong>. Natural de Zaragoza. Estudió Derecho y es máster en auditoría y gestión de TIC, máster en Derecho Bancario y Financiero de Consumo, y máster en Etología de conflictos sociales y políticos.</p><div class="hr"></div><p>Su afán por la ciencia le llevó a cambiar radicalmente de carrera. Estudió máster en neuropsicología clínica y máster en ciencias cognitivas. Se especializó en bases biológicas del aprendizaje y en la relación entre tecnología y cerebro.</p><p>Lleva cuatro años dedicándose a bases biológicas de la conciencia y teoría de la mente, intentando desarrollar filosofía de la conciencia en las coordenadas del <strong>realismo cognitivo</strong>.</p>` },
-  contacto: { color:'#22d3ee', category:'Proxy', title:'Contacto con el Autor',
-    html:`<p>Puedes contactar directamente con el autor por correo electrónico.</p><a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">&#9993; eljuegodelaberinto@gmail.com</a>` },
-  linktree: { color:'#22d3ee', category:'Proxy', title:'Linktree',
-    html:`<p>Todos los enlaces del canal y del autor reunidos en un solo lugar.</p><a class="lbtn" href="https://linktr.ee/inside_proxy" target="_blank">&#128279; linktr.ee/inside_proxy</a>` },
-  libros:   { color:'#22d3ee', category:'Proxy', title:'Libros',
-    html:`<p>Obras escritas por Proxy. Explora los nodos conectados para acceder a cada título.</p>` },
-  polaris:  { color:'#22d3ee', category:'Proxy', title:'Polaris',
-    html:`<p>Obra de Proxy sobre la reconstrucción arquetípica de lo masculino y lo femenino.</p><a class="lbtn" href="https://www.amazon.es/Polaris-reconstrucci%C3%B3n-arquet%C3%ADpica-masculino-femenino/dp/B0D123D2RG" target="_blank">&#128214; Ver en Amazon</a>` },
-  arcana:   { color:'#22d3ee', category:'Proxy', title:'Arcana',
-    html:`<span class="badge">Próximamente</span><p>El siguiente libro de Proxy está en preparación. Pendiente de publicación.</p>` },
-  grimorio: { color:'#22d3ee', category:'Proxy', title:'Grimorio del Laberinto',
-    html:`<span class="badge">Próximamente</span><p>Próxima obra de Proxy. Pendiente de publicación.</p>` },
-  ayudar:   { color:'#22d3ee', category:'Proxy', title:'Cómo Ayudar',
-    html:`<p>Puedes ayudar al canal aportando <strong>información o trabajo</strong> sobre los proyectos de investigación, o colaborar económicamente:</p><a class="lbtn" href="https://www.paypal.com/paypalme/my/profile" target="_blank">&#128176; PayPal</a><a class="lbtn" href="https://www.patreon.com/inside_proxy" target="_blank">&#9829; Patreon — inside_proxy</a><div class="hr"></div><p>Proxy necesita un <strong>director de tesis en Barcelona</strong>, fondos para poder estudiar, y contactos donde hablar de su tema.</p>` },
-  proyectos:{ color:'#fb923c', category:'Proyectos', title:'Proyectos',
-    html:`<p>Iniciativas activas del canal Proxy: investigación, tecnología e inteligencia artificial al servicio de la filosofía de la mente.</p>` },
-  ariadna:  { color:'#fb923c', category:'Proyectos', title:'Proyecto Ariadna',
-    html:`<p><strong>Ariadna</strong> es una iniciativa dedicada a convertir los estudios del autor en material publicable.</p><div class="hr"></div><p><strong>Tema del doctorado:</strong><br><em>"Bases neurobiológicas de la conciencia: Reclasificación teleosemántica de funciones cognitivas."</em></p><p>La disciplina está basada en la <strong>teleosemántica de Millikan et al.</strong></p><a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">&#9993; Contactar al Autor</a>` },
-  teseo:    { color:'#fb923c', category:'Proyectos', title:'Proyecto Teseo',
-    html:`<p><strong>Teseo</strong> es una aplicación remota de NotebookLM donde todos los directos forman parte del repositorio de una IA simple.</p><div class="hr"></div><p>Se actualiza constantemente con todos los contenidos, incluidos los libros escritos por Proxy.</p><a class="lbtn" href="https://is.gd/labyrinth_searcher" target="_blank">&#128269; Abrir Proyecto Teseo</a>` },
-  pandora:  { color:'#fb923c', category:'Proyectos', title:'Proyecto Pandora',
-    html:`<p><strong>Pandora</strong> es el proyecto de diseño y construcción de una máquina de neurofeedback portátil con procesadores pequeños.</p><p>Las <strong>entradas</strong> son constantes vitales: ritmo cardíaco, tensión de la piel, movimiento corporal. Las <strong>salidas</strong> son luces, vibraciones y sonidos para aprender de los patrones de sueño del usuario.</p><div class="hr"></div><p>Objetivos:</p><ul><li>Ayudar a tener <strong>sueños lúcidos</strong></li><li>Acceder a patrones de <strong>trance sómnico</strong></li></ul><div class="hr"></div><p><strong>Arquitectura:</strong></p><pre>Electrodos
-   ↓
-ADS1299
-   ↓ SPI
-ESP32 o Teensy
-   ↓ USB
-Raspberry Pi
-   ↓
-Python (BrainFlow + NumPy)
+// Construir PARENT a partir de CHILDREN
+const PARENT = {canal:null};
+Object.entries(CHILDREN).forEach(([p,cs])=>cs.forEach(c=>PARENT[c]=p));
+
+const CAT_COLORS = {root:'#a855f7',proxy:'#22d3ee',proyectos:'#fb923c',contenidos:'#4ade80'};
+
+// ─── CONTENIDO DE CADA NODO ──────────────────────────────────────────────────
+// Edita el HTML de cada entrada para actualizar el panel lateral
+const CONTENT = {
+  canal:{color:'#a855f7',category:'El Canal',title:'Proxy — El Canal',
+    html:`<p>Bienvenido al mapa interactivo del canal <strong>Proxy</strong>.</p>
+<p>Haz clic en cualquier nodo para explorar su contenido. Cada sección revela los proyectos, obras y temáticas que componen el canal.</p>`},
+
+  proxy:{color:'#22d3ee',category:'Proxy',title:'Proxy',
+    html:`<p>Sección dedicada al autor del canal, sus obras y sus medios de contacto.</p>`},
+
+  autor:{color:'#22d3ee',category:'Proxy',title:'Sobre el Autor',
+    html:`<p>Proxy es <strong>Juan Boza Samanes</strong>. Natural de Zaragoza. Estudió Derecho y es máster en auditoría y gestión de TIC, máster en Derecho Bancario y Financiero de Consumo, y máster en Etología de conflictos sociales y políticos.</p>
+<div class="hr"></div>
+<p>Su afán por la ciencia le llevó a cambiar radicalmente de carrera. Estudió máster en neuropsicología clínica y máster en ciencias cognitivas. Se especializó en bases biológicas del aprendizaje y en la relación entre tecnología y cerebro.</p>
+<p>Lleva cuatro años dedicándose a bases biológicas de la conciencia y teoría de la mente, intentando desarrollar filosofía de la conciencia en las coordenadas del <strong>realismo cognitivo</strong>.</p>`},
+
+  contacto:{color:'#22d3ee',category:'Proxy',title:'Contacto con el Autor',
+    html:`<p>Puedes contactar directamente con el autor por correo electrónico.</p>
+<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">✉ eljuegodelaberinto@gmail.com</a>`},
+
+  linktree:{color:'#22d3ee',category:'Proxy',title:'Linktree',
+    html:`<p>Todos los enlaces del canal y del autor reunidos en un solo lugar.</p>
+<a class="lbtn" href="https://linktr.ee/inside_proxy" target="_blank">🔗 linktr.ee/inside_proxy</a>`},
+
+  libros:{color:'#22d3ee',category:'Proxy',title:'Libros',
+    html:`<p>Obras escritas por Proxy. Explora los nodos conectados para acceder a cada título.</p>`},
+
+  polaris:{color:'#22d3ee',category:'Proxy',title:'Polaris',
+    html:`<p>Obra de Proxy sobre la reconstrucción arquetípica de lo masculino y lo femenino.</p>
+<a class="lbtn" href="https://www.amazon.es/Polaris-reconstrucci%C3%B3n-arquet%C3%ADpica-masculino-femenino/dp/B0D123D2RG" target="_blank">📖 Ver en Amazon</a>`},
+
+  arcana:{color:'#22d3ee',category:'Proxy',title:'Arcana',
+    html:`<span class="badge">Próximamente</span>
+<p>El siguiente libro de Proxy está en preparación. Pendiente de publicación.</p>`},
+
+  grimorio:{color:'#22d3ee',category:'Proxy',title:'Grimorio del Laberinto',
+    html:`<span class="badge">Próximamente</span>
+<p>Próxima obra de Proxy. Pendiente de publicación.</p>`},
+
+  ayudar:{color:'#22d3ee',category:'Proxy',title:'Cómo Ayudar',
+    html:`<p>Puedes ayudar al canal aportando <strong>información o trabajo</strong> sobre los proyectos de investigación, o colaborar económicamente:</p>
+<a class="lbtn" href="https://www.paypal.com/paypalme/my/profile" target="_blank">💶 PayPal</a>
+<a class="lbtn" href="https://www.patreon.com/inside_proxy" target="_blank">♥ Patreon — inside_proxy</a>
+<div class="hr"></div>
+<p>Proxy necesita un <strong>director de tesis en Barcelona</strong>, fondos para poder estudiar, y contactos donde hablar de su tema.</p>
+<p>También puedes recomendar o regalar sus <strong>libros</strong>, o su <strong>merchandising</strong>.</p>`},
+
+  proyectos:{color:'#fb923c',category:'Proyectos',title:'Proyectos',
+    html:`<p>Iniciativas activas del canal Proxy: investigación, tecnología e inteligencia artificial al servicio de la filosofía de la mente.</p>`},
+
+  ariadna:{color:'#fb923c',category:'Proyectos',title:'Proyecto Ariadna',
+    html:`<p><strong>Ariadna</strong> es una iniciativa dedicada a convertir los estudios del autor en material publicable.</p>
+<div class="hr"></div>
+<p><strong>Tema del doctorado:</strong><br><em>"Bases neurobiológicas de la conciencia: Reclasificación teleosemántica de funciones cognitivas."</em></p>
+<p>La disciplina está basada en la <strong>teleosemántica de Millikan et al.</strong> Si tienes contactos, puedes referenciar el canal o a su autor.</p>
+<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">✉ Contactar al Autor</a>`},
+
+  teseo:{color:'#fb923c',category:'Proyectos',title:'Proyecto Teseo',
+    html:`<p><strong>Teseo</strong> es una aplicación remota de NotebookLM donde todos los directos forman parte del repositorio de una IA simple.</p>
+<p>Permite al usuario hacer preguntas sobre cómo piensa Proxy acerca de ciertos temas.</p>
+<div class="hr"></div>
+<p>Se actualiza constantemente con todos los contenidos, incluidos los libros escritos por Proxy.</p>
+<a class="lbtn" href="https://is.gd/labyrinth_searcher" target="_blank">🔍 Abrir Proyecto Teseo</a>`},
+
+  pandora:{color:'#fb923c',category:'Proyectos',title:'Proyecto Pandora',
+    html:`<p><strong>Pandora</strong> es el proyecto de diseño y construcción de una máquina de neurofeedback portátil con procesadores pequeños.</p>
+<p>Las <strong>entradas</strong> son constantes vitales: ritmo cardíaco, tensión de la piel, movimiento corporal. Las <strong>salidas</strong> son luces, vibraciones y sonidos para acompañar los patrones de sueño.</p>
+<div class="hr"></div>
+<p>Objetivos:</p>
+<ul>
+  <li>Ayudar a tener <strong>sueños lúcidos</strong></li>
+  <li>Acceder a patrones de <strong>trance sómnico</strong></li>
+</ul>
+<div class="hr"></div>
+<p><strong>Arquitectura:</strong></p>
+<pre>Electrodos → ADS1299 → ESP32/Teensy → Raspberry Pi
+           ↓ SPI          ↓ USB           ↓ Python
 
 Accelerometer (I2C)
-Heart sensor (I2C)
-EDA sensor (ADC)
-        ↓
-      ESP32
-        ↓
-     WiFi / BLE
-        ↓
-   Raspberry / PC</pre><span class="badge">En proceso</span>` },
-  'pandora-hw':   { color:'#fb923c', category:'Proyectos', title:'Hardware — Pandora',
-    html:`<img src="img/neuron.png"><p>Componentes hardware del proyecto Pandora: sensores, microcontroladores y periféricos de salida.</p>` },
-  'pandora-esq':  { color:'#fb923c', category:'Proyectos', title:'Esquema — Pandora',
-    html:`<img src="img/stars.png"><p>Diagrama de arquitectura y conexiones del sistema: cadena de señal, protocolos (I2C, SPI, USB, WiFi/BLE) y flujo de datos.</p>` },
-  'pandora-proto':{ color:'#fb923c', category:'Proyectos', title:'Prototipo — Pandora',
-    html:`<img src="img/alchemy.png"><p>Estado actual del prototipo físico de la máquina de neurofeedback portátil.</p>` },
-  galatea:  { color:'#fb923c', category:'Proyectos', title:'Proyecto Galatea',
-    html:`<p><strong>Galatea</strong> es el proyecto más ambicioso de Proxy. <em>Gala</em> es un pequeño organismo artificial programado en un entorno virtual que se comporta conforme a la estructura de la mente de un organismo humano.</p><div class="hr"></div><p>Galatea pretende ser la respuesta inversa al paradigma de <strong>"la habitación china"</strong>: una IA será una inteligencia cuando sea indistinguible de la inteligencia humana.</p>` },
-  contenidos:{ color:'#4ade80', category:'Contenidos', title:'Contenidos del Canal',
-    html:`<p>El canal produce contenido en YouTube y Twitch estructurado en tres grandes temáticas: <strong>Poética</strong>, <strong>Ciencia</strong> y <strong>Filosofía</strong>.</p>` },
-  tematicas: { color:'#4ade80', category:'Contenidos', title:'Temáticas',
-    html:`<p>El contenido se organiza en tres áreas temáticas, cada una abordada desde las coordenadas del <strong>Realismo Cognitivo</strong> de Proxy.</p>` },
-  poetica:   { color:'#4ade80', category:'Contenidos', title:'Poética',
-    html:`<p>En el canal se analiza la <strong>fantasía y la mitología</strong> con un enfoque psicoanalítico para transmitir y experimentar la <strong>semiótica</strong>: la disciplina filosófica que estudia qué es el significado.</p><div class="hr"></div><p>También se habla de <strong>Magia</strong> y de estructuras que manifiestan cómo piensa la mente.</p>` },
-  ciencia:   { color:'#4ade80', category:'Contenidos', title:'Ciencia',
-    html:`<p>En YouTube y Twitch se realizan directos <strong>"magistrales"</strong> desarrollando conceptos de ciencia psicológica y biológica.</p><p>Algunos temas:</p><ul><li>Concepto de "enfermedad mental"</li><li>Síndromes clínicos y anomalías</li><li>Mecánica de los sueños</li><li>Experimentos famosos</li></ul>` },
-  filosofia: { color:'#4ade80', category:'Contenidos', title:'Filosofía',
-    html:`<p>Proxy desarrolla sobre la pizarra los conceptos más importantes desde las coordenadas del <strong>Realismo Cognitivo</strong> y su <em>teoría de la representación</em>.</p><p>Se habla de <strong>matemáticas y biología</strong> en un nivel algo más avanzado que los canales de divulgación típicos de internet.</p>` },
+Heart sensor  (I2C)
+EDA sensor    (ADC)
+      ↓ ESP32 ↓ WiFi/BLE → Raspberry/PC</pre>
+<span class="badge">En proceso</span>`},
+
+  'pandora-hw':{color:'#fb923c',category:'Proyectos',title:'Hardware — Pandora',
+    html:`<img src="img/neuron.png"><p>Componentes hardware del proyecto Pandora: sensores, microcontroladores y periféricos de salida.</p>`},
+
+  'pandora-esq':{color:'#fb923c',category:'Proyectos',title:'Esquema — Pandora',
+    html:`<img src="img/stars.png"><p>Diagrama de arquitectura y conexiones del sistema: cadena de señal, protocolos (I2C, SPI, USB, WiFi/BLE) y flujo de datos.</p>`},
+
+  'pandora-proto':{color:'#fb923c',category:'Proyectos',title:'Prototipo — Pandora',
+    html:`<img src="img/alchemy.png"><p>Estado actual del prototipo físico de la máquina de neurofeedback portátil.</p>`},
+
+  galatea:{color:'#fb923c',category:'Proyectos',title:'Proyecto Galatea',
+    html:`<p><strong>Galatea</strong> es el proyecto más ambicioso de Proxy. <em>Gala</em> es un pequeño organismo artificial que se comporta conforme a la estructura de la mente de un organismo humano.</p>
+<div class="hr"></div>
+<p>Galatea pretende ser la respuesta inversa al paradigma de <strong>"la habitación china"</strong>: una IA será una inteligencia cuando sea indistinguible de la inteligencia humana.</p>
+<p>Diseño de <em>Gala</em>, una <a href="https://es.wikipedia.org/wiki/Hydra_(animal)" target="_blank">Hidra</a> con sistemas representacionales de arquitectura cognitiva protohumana.</p>`},
+
+  contenidos:{color:'#4ade80',category:'Contenidos',title:'Contenidos del Canal',
+    html:`<p>El canal produce contenido en YouTube y Twitch estructurado en tres grandes temáticas: <strong>Poética</strong>, <strong>Ciencia</strong> y <strong>Filosofía</strong>.</p>`},
+
+  tematicas:{color:'#4ade80',category:'Contenidos',title:'Temáticas',
+    html:`<p>El contenido se organiza en tres áreas temáticas, cada una abordada desde las coordenadas del <strong>Realismo Cognitivo</strong> de Proxy.</p>`},
+
+  poetica:{color:'#4ade80',category:'Contenidos',title:'Poética',
+    html:`<p>En el canal se analiza la <strong>fantasía y la mitología</strong> con un enfoque psicoanalítico para transmitir y experimentar la <strong>semiótica</strong>: la disciplina filosófica que estudia qué es el significado.</p>
+<div class="hr"></div>
+<p>El símbolo es imprescindible en fantasía. También se habla de <strong>Magia</strong> y de estructuras que manifiestan cómo piensa la mente.</p>`},
+
+  ciencia:{color:'#4ade80',category:'Contenidos',title:'Ciencia',
+    html:`<p>En YouTube y Twitch se realizan directos <strong>"magistrales"</strong> desarrollando conceptos de ciencia psicológica y biológica con la visión de Proxy.</p>
+<p>Algunos temas tratados:</p>
+<ul>
+  <li>Concepto de "enfermedad mental"</li>
+  <li>Síndromes clínicos y anomalías psicológicas</li>
+  <li>Mecánica de los sueños</li>
+  <li>Experimentos famosos</li>
+  <li>Filosofía de la Magia</li>
+</ul>`},
+
+  filosofia:{color:'#4ade80',category:'Contenidos',title:'Filosofía',
+    html:`<p>Proxy desarrolla sobre la pizarra los conceptos más importantes desde las coordenadas del <strong>Realismo Cognitivo</strong> y su <em>teoría de la representación</em>.</p>
+<p>Se habla de <strong>matemáticas y biología</strong> en un nivel algo más avanzado que los canales de divulgación típicos de internet.</p>
+<p>También se abordan los <strong>fundamentos psicológicos de la Magia</strong>.</p>`},
 };
 
 // ════════════════════════════════════════════════════════
-//  PERSISTENCE
-// ════════════════════════════════════════════════════════
-function loadData() {
-  try {
-    const s = localStorage.getItem('mapa-v2');
-    if (s) {
-      const d = JSON.parse(s);
-      return { nodes: d.nodes || clone(ND), children: d.children || clone(CD), content: d.content || clone(KD) };
-    }
-  } catch(e) {}
-  return { nodes: clone(ND), children: clone(CD), content: clone(KD) };
-}
-function saveData() {
-  localStorage.setItem('mapa-v2', JSON.stringify({ nodes: NODES, children: CHILDREN, content: CONTENT }));
-}
-function clone(o) { return JSON.parse(JSON.stringify(o)); }
-
-const { nodes: NODES, children: CHILDREN, content: CONTENT } = loadData();
-
-const PARENT = { canal: null };
-function rebuildParent() {
-  Object.keys(PARENT).forEach(k => { if (k !== 'canal') delete PARENT[k]; });
-  Object.entries(CHILDREN).forEach(([p, cs]) => cs.forEach(c => PARENT[c] = p));
-}
-rebuildParent();
-
-// ════════════════════════════════════════════════════════
-//  COLORS
-// ════════════════════════════════════════════════════════
-const CAT_COLORS = { root:'#a855f7', proxy:'#22d3ee', proyectos:'#fb923c', contenidos:'#4ade80' };
-
-// ════════════════════════════════════════════════════════
-//  CYTOSCAPE
+//  CYTOSCAPE — estilos visuales
 // ════════════════════════════════════════════════════════
 const cy = cytoscape({
   container: document.getElementById('cy'),
   elements: [],
   style: [
-    {
-      selector: 'node',
-      style: {
-        'label': 'data(label)',
-        'text-wrap': 'wrap',
-        'text-max-width': '65px',
-        'text-valign': 'center',
-        'text-halign': 'center',
-        'font-family': '"JetBrains Mono", monospace',
-        'font-size': '8px',
-        'font-weight': '500',
-        'color': 'rgba(191,208,224,0.9)',
-        'text-outline-width': 2,
-        'width': 58, 'height': 58,
-        'shape': 'rectangle',
-        'border-width': 1,
-        'cursor': 'pointer',
-        'background-opacity': 0.75,
-        'z-index': 10,
-      }
-    },
-    { selector: 'node[category="root"]', style: {
-        'background-fill': 'radial-gradient',
-        'background-gradient-stop-colors': '#3d1280 #7c3aed #a855f7',
-        'background-gradient-stop-positions': '0% 65% 100%',
-        'text-outline-color': '#1a0840',
-        'shadow-blur': 22, 'shadow-color': '#a855f7', 'shadow-opacity': 0.55,
-        'shadow-offset-x': 0, 'shadow-offset-y': 0,
-        'border-color': 'rgba(168,85,247,0.5)',
+    { selector:'node', style:{
+      'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'62px',
+      'text-valign':'center', 'text-halign':'center',
+      'font-family':'"JetBrains Mono",monospace',
+      'font-size':'8px', 'font-weight':'500',
+      'color':'rgba(191,208,224,.92)', 'text-outline-width':2,
+      'width':60,'height':60,'shape':'rectangle',
+      'border-width':1, 'cursor':'pointer', 'background-opacity':.75, 'z-index':10,
     }},
-    { selector: 'node[category="proxy"]', style: {
-        'background-fill': 'radial-gradient',
-        'background-gradient-stop-colors': '#062232 #0b7fa8 #22d3ee',
-        'background-gradient-stop-positions': '0% 65% 100%',
-        'text-outline-color': '#031420',
-        'shadow-blur': 22, 'shadow-color': '#22d3ee', 'shadow-opacity': 0.55,
-        'shadow-offset-x': 0, 'shadow-offset-y': 0,
-        'border-color': 'rgba(34,211,238,0.45)',
+    { selector:'node[category="root"]', style:{
+      'background-fill':'radial-gradient',
+      'background-gradient-stop-colors':'#3d1280 #7c3aed #a855f7',
+      'background-gradient-stop-positions':'0% 65% 100%',
+      'text-outline-color':'#1a0840',
+      'shadow-blur':22,'shadow-color':'#a855f7','shadow-opacity':.55,
+      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(168,85,247,.5)',
     }},
-    { selector: 'node[category="proyectos"]', style: {
-        'background-fill': 'radial-gradient',
-        'background-gradient-stop-colors': '#2a0e05 #a83808 #fb923c',
-        'background-gradient-stop-positions': '0% 65% 100%',
-        'text-outline-color': '#160600',
-        'shadow-blur': 22, 'shadow-color': '#fb923c', 'shadow-opacity': 0.55,
-        'shadow-offset-x': 0, 'shadow-offset-y': 0,
-        'border-color': 'rgba(251,146,60,0.45)',
+    { selector:'node[category="proxy"]', style:{
+      'background-fill':'radial-gradient',
+      'background-gradient-stop-colors':'#062232 #0b7fa8 #22d3ee',
+      'background-gradient-stop-positions':'0% 65% 100%',
+      'text-outline-color':'#031420',
+      'shadow-blur':22,'shadow-color':'#22d3ee','shadow-opacity':.55,
+      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(34,211,238,.45)',
     }},
-    { selector: 'node[category="contenidos"]', style: {
-        'background-fill': 'radial-gradient',
-        'background-gradient-stop-colors': '#031408 #127838 #4ade80',
-        'background-gradient-stop-positions': '0% 65% 100%',
-        'text-outline-color': '#020c04',
-        'shadow-blur': 22, 'shadow-color': '#4ade80', 'shadow-opacity': 0.55,
-        'shadow-offset-x': 0, 'shadow-offset-y': 0,
-        'border-color': 'rgba(74,222,128,0.45)',
+    { selector:'node[category="proyectos"]', style:{
+      'background-fill':'radial-gradient',
+      'background-gradient-stop-colors':'#2a0e05 #a83808 #fb923c',
+      'background-gradient-stop-positions':'0% 65% 100%',
+      'text-outline-color':'#160600',
+      'shadow-blur':22,'shadow-color':'#fb923c','shadow-opacity':.55,
+      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(251,146,60,.45)',
     }},
-    // Card nodes
-    { selector: 'node[type="card"]', style: {
-        'shape': 'rectangle',
-        'width': 95, 'height': 65,
-        'background-image': 'data(image)',
-        'background-fit': 'cover',
-        'background-clip': 'node',
-        'background-fill': 'solid',
-        'background-color': '#060614',
-        'background-opacity': 1,
-        'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 6,
-        'text-outline-color': 'rgba(0,0,0,0.92)', 'text-outline-width': 2,
-        'font-size': '7px',
+    { selector:'node[category="contenidos"]', style:{
+      'background-fill':'radial-gradient',
+      'background-gradient-stop-colors':'#031408 #127838 #4ade80',
+      'background-gradient-stop-positions':'0% 65% 100%',
+      'text-outline-color':'#020c04',
+      'shadow-blur':22,'shadow-color':'#4ade80','shadow-opacity':.55,
+      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(74,222,128,.45)',
     }},
-    // Selection states
-    { selector: 'node.sel', style: {
-        'width': 72, 'height': 72,
-        'border-width': 2.5, 'border-color': 'rgba(255,255,255,0.75)',
-        'shadow-blur': 42, 'shadow-opacity': 0.9,
-        'background-opacity': 1, 'font-size': '9px', 'z-index': 50,
+    { selector:'node[type="card"]', style:{
+      'shape':'rectangle','width':92,'height':62,
+      'background-image':'data(image)','background-fit':'cover',
+      'background-clip':'node','background-fill':'solid',
+      'background-color':'#060614','background-opacity':1,
+      'text-valign':'bottom','text-halign':'center','text-margin-y':6,
+      'text-outline-color':'rgba(0,0,0,.92)','text-outline-width':2,'font-size':'7px',
     }},
-    { selector: 'node[type="card"].sel', style: {
-        'width': 108, 'height': 74,
-        'border-width': 2.5, 'border-color': 'rgba(255,255,255,0.75)',
+    // Estado: seleccionado
+    { selector:'node.sel', style:{
+      'width':74,'height':74,
+      'border-width':2.5,'border-color':'rgba(255,255,255,.75)',
+      'shadow-blur':44,'shadow-opacity':.9,'background-opacity':1,
+      'font-size':'9.5px','z-index':50,
     }},
-    { selector: 'node.neighbor', style: {
-        'width': 58, 'height': 58,
-        'background-opacity': 0.78,
-        'border-width': 1, 'border-opacity': 0.55,
-        'shadow-opacity': 0.42, 'z-index': 20,
+    { selector:'node[type="card"].sel', style:{'width':106,'height':72,'border-width':2.5,'border-color':'rgba(255,255,255,.75)'}},
+    // Estado: vecino del seleccionado
+    { selector:'node.nbr', style:{
+      'width':60,'height':60,'background-opacity':.78,
+      'border-width':1,'border-opacity':.55,'shadow-opacity':.42,'z-index':20,
     }},
-    { selector: 'node[type="card"].neighbor', style: {
-        'width': 95, 'height': 65,
+    { selector:'node[type="card"].nbr', style:{'width':92,'height':62}},
+    // Estado: lejano
+    { selector:'node.far', style:{
+      'width':36,'height':36,'background-opacity':.18,
+      'border-opacity':.12,'shadow-opacity':.04,
+      'color':'rgba(191,208,224,.2)','text-outline-width':1,'font-size':'6.5px','z-index':5,
     }},
-    { selector: 'node.distant', style: {
-        'width': 32, 'height': 32,
-        'background-opacity': 0.18,
-        'border-opacity': 0.12,
-        'shadow-opacity': 0.04,
-        'color': 'rgba(191,208,224,0.2)',
-        'text-outline-width': 1,
-        'font-size': '6.5px',
-        'z-index': 5,
+    { selector:'node[type="card"].far', style:{'width':52,'height':36}},
+    // Aristas
+    { selector:'edge', style:{
+      'width':1,'line-color':'rgba(0,210,255,.06)',
+      'curve-style':'bezier','target-arrow-shape':'none','opacity':.5,
     }},
-    { selector: 'node[type="card"].distant', style: {
-        'width': 52, 'height': 36,
-    }},
-    // Edges
-    { selector: 'edge', style: {
-        'width': 1, 'line-color': 'rgba(0,210,255,0.06)',
-        'curve-style': 'bezier', 'target-arrow-shape': 'none', 'opacity': 0.5,
-    }},
-    { selector: 'edge.e-on', style: {
-        'line-color': 'rgba(0,210,255,0.32)', 'width': 1.5, 'opacity': 1,
-    }},
-    { selector: 'edge.e-off', style: {
-        'opacity': 0.07, 'line-color': 'rgba(0,210,255,0.03)',
-    }},
+    { selector:'edge.e-on',  style:{'line-color':'rgba(0,210,255,.32)','width':1.5,'opacity':1}},
+    { selector:'edge.e-off', style:{'opacity':.07,'line-color':'rgba(0,210,255,.03)'}},
   ],
-  userZoomingEnabled: true,
-  userPanningEnabled: true,
-  wheelSensitivity: 0.16,
-  minZoom: 0.08, maxZoom: 5,
-  autoungrabify: true,
+  userZoomingEnabled:true,
+  userPanningEnabled:true,
+  wheelSensitivity:.16,
+  minZoom:.08, maxZoom:5,
+  autoungrabify:true,   // nodos flotantes, no arrastrables
 });
 
 // ════════════════════════════════════════════════════════
-//  TREE LAYOUT
+//  LAYOUT DE ÁRBOL (más vertical que horizontal)
 // ════════════════════════════════════════════════════════
-function computeTreeLayout() {
-  const HGAP = 100, VGAP = 120;
-  const lv = {};
-
-  function countLeaves(id) {
-    const kids = CHILDREN[id] || [];
-    if (!kids.length) { lv[id] = 1; return 1; }
-    let s = 0; kids.forEach(k => s += countLeaves(k));
-    lv[id] = s; return s;
+function computeLayout(){
+  const HGAP=62, VGAP=148;
+  const lv={};
+  function countLeaves(id){
+    const k=CHILDREN[id]||[];
+    if(!k.length){lv[id]=1;return 1;}
+    let s=0;k.forEach(c=>s+=countLeaves(c));lv[id]=s;return s;
   }
   countLeaves('canal');
-
-  const pos = {};
-  function assign(id, depth, xStart) {
-    const kids = CHILDREN[id] || [];
-    const span = (lv[id] || 1) * HGAP;
-    pos[id] = { x: xStart + span / 2, y: depth * VGAP };
-    let cursor = xStart;
-    kids.forEach(k => { assign(k, depth + 1, cursor); cursor += (lv[k] || 1) * HGAP; });
+  const pos={};
+  function assign(id,depth,xStart){
+    const k=CHILDREN[id]||[];
+    const span=(lv[id]||1)*HGAP;
+    pos[id]={x:xStart+span/2,y:depth*VGAP};
+    let cur=xStart;
+    k.forEach(c=>{assign(c,depth+1,cur);cur+=(lv[c]||1)*HGAP;});
   }
-  assign('canal', 0, 0);
-
-  // Fallback for orphaned nodes
-  Object.keys(NODES).forEach(id => { if (!pos[id]) pos[id] = { x: 0, y: 700 }; });
+  assign('canal',0,0);
+  Object.keys(NODES).forEach(id=>{if(!pos[id])pos[id]={x:0,y:700};});
   return pos;
 }
 
 // ════════════════════════════════════════════════════════
-//  BUILD FULL GRAPH
+//  CONSTRUIR EL GRAFO COMPLETO
 // ════════════════════════════════════════════════════════
-let treePos = {};
-let selectedId = null;
+let basePos={};   // posiciones base para la animación
+let selId=null;
 
-function buildFullGraph() {
-  stopAmbient();
+function buildGraph(){
+  stopAnim();
   cy.elements().remove();
-  treePos = computeTreeLayout();
+  basePos = computeLayout();
 
-  Object.values(NODES).forEach(n => {
-    const p = treePos[n.id] || { x: 0, y: 0 };
+  Object.values(NODES).forEach(n=>{
+    const p=basePos[n.id]||{x:0,y:0};
     cy.add({
-      group: 'nodes',
-      data: { id: n.id, label: n.label, category: n.category, type: n.type || '', image: n.image || 'none', _bx: p.x, _by: p.y },
-      position: { ...p },
+      group:'nodes',
+      data:{id:n.id,label:n.label,category:n.category,type:n.type||'',image:n.image||'none'},
+      position:{x:p.x,y:p.y},
     });
   });
 
-  let ei = 0;
-  Object.entries(CHILDREN).forEach(([pid, kids]) => {
-    kids.forEach(cid => {
-      if (NODES[pid] && NODES[cid])
-        cy.add({ group: 'edges', data: { id: `e${ei++}`, source: pid, target: cid } });
+  let ei=0;
+  Object.entries(CHILDREN).forEach(([pid,kids])=>{
+    kids.forEach(cid=>{
+      if(NODES[pid]&&NODES[cid])
+        cy.add({group:'edges',data:{id:'e'+(ei++),source:pid,target:cid}});
     });
   });
 
-  cy.fit(cy.elements(), 55);
-  selectNode(selectedId || 'canal', false);
-  startAmbient();
+  cy.fit(cy.elements(),60);
+  applySelection(selId||'canal');
+  startAnim();
 }
 
 // ════════════════════════════════════════════════════════
-//  SELECT NODE
+//  SELECCIONAR NODO — resaltar vecindad, abrir panel
 // ════════════════════════════════════════════════════════
-function selectNode(id, showPanel = true) {
-  if (!NODES[id]) return;
-  selectedId = id;
+function applySelection(id, openPan){
+  if(!NODES[id]) return;
+  selId=id;
+  const nbrs=new Set([...(CHILDREN[id]||[]),...(PARENT[id]!=null?[PARENT[id]]:[] )]);
 
-  const neighbors = new Set([
-    ...(CHILDREN[id] || []),
-    ...(PARENT[id] != null ? [PARENT[id]] : []),
-  ]);
+  // Limpiar estilos inline previos del glow antes de cambiar clases
+  cy.nodes().removeStyle('shadow-blur shadow-opacity border-opacity border-width');
 
-  // Limpiar estilos inline antes de que las clases tomen el control
-  cy.nodes().removeStyle('width height shadow-blur shadow-opacity border-opacity border-width');
-
-  cy.nodes().forEach(node => {
-    node.removeClass('sel neighbor distant');
-    const nid = node.id();
-    if (nid === id) node.addClass('sel');
-    else if (neighbors.has(nid)) node.addClass('neighbor');
-    else node.addClass('distant');
+  cy.nodes().forEach(node=>{
+    node.removeClass('sel nbr far');
+    const nid=node.id();
+    if(nid===id)          node.addClass('sel');
+    else if(nbrs.has(nid))node.addClass('nbr');
+    else                  node.addClass('far');
   });
-
-  cy.edges().forEach(edge => {
+  cy.edges().forEach(edge=>{
     edge.removeClass('e-on e-off');
-    const src = edge.source().id(), tgt = edge.target().id();
-    if (src === id || tgt === id) edge.addClass('e-on');
-    else edge.addClass('e-off');
+    const s=edge.source().id(),t=edge.target().id();
+    if(s===id||t===id)edge.addClass('e-on');
+    else              edge.addClass('e-off');
   });
 
-  updateTopBar(id);
+  updateBreadcrumb(id);
   updateSephiroth(id);
   switchBg(NODES[id].category);
-  if (showPanel) openPanel(id);
+  if(openPan!==false) openPanel(id);
 }
 
 // ════════════════════════════════════════════════════════
-//  TOP BAR
+//  PANEL LATERAL
 // ════════════════════════════════════════════════════════
-function pathTo(id) {
-  const p = []; let c = id;
-  while (c !== null && c !== undefined) { p.unshift(c); c = PARENT[c]; }
+function openPanel(id){
+  const d=CONTENT[id];
+  if(!d) return;
+  document.getElementById('p-cat').innerHTML='<span style="color:'+d.color+'">'+d.category+'</span>';
+  document.getElementById('p-title').textContent=d.title;
+  document.getElementById('p-body').innerHTML=d.html;
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+}
+
+// ════════════════════════════════════════════════════════
+//  BREADCRUMB
+// ════════════════════════════════════════════════════════
+function pathTo(id){
+  const p=[];let c=id;
+  while(c!=null){p.unshift(c);c=PARENT[c];}
   return p;
 }
-
-function updateTopBar(id) {
-  const path = pathTo(id);
-  document.getElementById('breadcrumb').innerHTML = path.map((nid, i) => {
-    const lbl = NODES[nid].label.replace('\n', ' ');
-    const sep = i > 0 ? '<span class="bc-sep"> / </span>' : '';
-    if (i === path.length - 1) return sep + '<span class="bc cur">' + lbl + '</span>';
-    return sep + '<span class="bc" onclick="selectNode(\'' + nid + '\',true)">' + lbl + '</span>';
+function updateBreadcrumb(id){
+  const path=pathTo(id);
+  document.getElementById('breadcrumb').innerHTML=path.map((nid,i)=>{
+    const lbl=NODES[nid].label.replace('\n',' ');
+    const sep=i>0?'<span class="bc-sep"> / </span>':'';
+    if(i===path.length-1) return sep+'<span class="bc cur">'+lbl+'</span>';
+    return sep+'<span class="bc" onclick="applySelection(\''+nid+'\',true)">'+lbl+'</span>';
   }).join('');
 }
 
 // ════════════════════════════════════════════════════════
-//  PANEL
+//  DETECCIÓN DE CLICK (nativa — no depende del sistema
+//  de eventos de Cytoscape que se confunde con la animación)
 // ════════════════════════════════════════════════════════
-function openPanel(id) {
-  const d = CONTENT[id]; if (!d) return;
-  document.getElementById('p-cat').innerHTML = '<span style="color:' + d.color + '">' + d.category + '</span>';
-  document.getElementById('p-title').textContent = d.title;
-  document.getElementById('p-body').innerHTML = d.html;
-  document.getElementById('panel').classList.add('open');
-}
-function closePanel() { document.getElementById('panel').classList.remove('open'); }
+document.getElementById('cy').addEventListener('click',function(e){
+  // Ignorar si el click está sobre el panel abierto
+  const pan=document.getElementById('panel');
+  if(pan.classList.contains('open')){
+    const r=pan.getBoundingClientRect();
+    if(e.clientX>=r.left) return;
+  }
 
-// ════════════════════════════════════════════════════════
-//  EVENTS
-// ════════════════════════════════════════════════════════
-// Click nativo: fiable aunque la animación esté moviendo nodos
-document.getElementById('cy').addEventListener('click', function(e) {
-  const rect = this.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
+  const rect=this.getBoundingClientRect();
+  const mx=e.clientX-rect.left;
+  const my=e.clientY-rect.top;
 
-  let hit = null, minDist = Infinity;
-  cy.nodes().forEach(node => {
-    const rp = node.renderedPosition();
-    const hw = node.renderedOuterWidth()  / 2 + 8;
-    const hh = node.renderedOuterHeight() / 2 + 8;
-    if (Math.abs(rp.x - mx) <= hw && Math.abs(rp.y - my) <= hh) {
-      const d = Math.hypot(rp.x - mx, rp.y - my);
-      if (d < minDist) { minDist = d; hit = node; }
+  let hit=null, minD=Infinity;
+  cy.nodes().forEach(node=>{
+    const rp=node.renderedPosition();
+    const hw=node.renderedOuterWidth()/2+10;
+    const hh=node.renderedOuterHeight()/2+10;
+    if(Math.abs(rp.x-mx)<=hw && Math.abs(rp.y-my)<=hh){
+      const d=Math.hypot(rp.x-mx,rp.y-my);
+      if(d<minD){minD=d;hit=node;}
     }
   });
 
-  if (hit) selectNode(hit.id(), true);
-  else closePanel();
+  if(hit) applySelection(hit.id(),true);
+  else    closePanel();
 });
 
-cy.on('mouseover', 'node', () => document.body.style.cursor = 'pointer');
-cy.on('mouseout',  'node', () => document.body.style.cursor = 'default');
+// Cursor pointer sobre nodos
+cy.on('mouseover','node',()=>document.body.style.cursor='pointer');
+cy.on('mouseout', 'node',()=>document.body.style.cursor='default');
 
-cy.on('mouseover', 'node', evt => {
-  if (!evt.target.hasClass('sel'))
-    evt.target.style({ 'border-width': 2, 'border-opacity': 0.8, 'shadow-blur': 32, 'shadow-opacity': 0.65 });
+// Hover glow
+cy.on('mouseover','node',evt=>{
+  if(!evt.target.hasClass('sel'))
+    evt.target.style({'border-width':2,'border-opacity':.8,'shadow-blur':32,'shadow-opacity':.65});
 });
-cy.on('mouseout', 'node', evt => {
-  if (!evt.target.hasClass('sel'))
-    evt.target.style({ 'border-width': 1, 'border-opacity': evt.target.hasClass('distant') ? 0.12 : 0.45, 'shadow-blur': 22 });
+cy.on('mouseout','node',evt=>{
+  if(!evt.target.hasClass('sel'))
+    evt.target.style({'border-width':1,'border-opacity':evt.target.hasClass('far')?.12:.45,'shadow-blur':22});
 });
 
 // ════════════════════════════════════════════════════════
-//  SEAWEED ANIMATION (todos los nodos)
+//  ANIMACIÓN ALGA — los nodos flotan y vuelven solos
 // ════════════════════════════════════════════════════════
-let animFrame = null, animStart = null, animRunning = false;
+let animFrame=null, animStart=null, animRunning=false;
 
-function ambientLoop(ts) {
-  if (!animRunning) return;
-  if (!animStart) animStart = ts;
-  const t = (ts - animStart) / 1000;
+function animLoop(ts){
+  if(!animRunning) return;
+  if(!animStart) animStart=ts;
+  const t=(ts-animStart)/1000;
 
-  try {
-    cy.nodes().forEach((node, i) => {
-      if (!node.inside()) return;
-      const isSel = node.hasClass('sel');
-      const isNbr = node.hasClass('neighbor');
-      const isCard = node.data('type') === 'card';
-      const bx = node.data('_bx'), by = node.data('_by');
-      if (bx === undefined) return;
+  try{
+    cy.nodes().forEach((node,i)=>{
+      if(!node.inside()) return;
+      const isSel=node.hasClass('sel');
+      const isNbr=node.hasClass('nbr');
+      const id=node.id();
+      const bp=basePos[id];
+      if(!bp) return;
 
-      // Amplitude: distant nodes sway more (seaweed in current)
-      const amp  = isSel ? 1.2 : isNbr ? 3.2 : 7.5;
-      const spd  = 0.42 + (i % 7) * 0.07;
-      const ph   = i * 1.9 + (node.id().charCodeAt(0) || 0) * 0.08;
+      // Los nodos lejanos oscilan más, los cercanos casi quietos
+      const amp  = isSel?1.2 : isNbr?3.0 : 7.0;
+      const spd  = .4+(i%7)*.06;
+      const ph   = i*2.1+(id.charCodeAt(0)||0)*.09;
 
+      // Posición oscila en torno a base → vuelve sola
       node.position({
-        x: bx + amp * Math.sin(t * spd + ph),
-        y: by + amp * 0.65 * Math.cos(t * spd * 0.78 + ph + 1.3),
+        x: bp.x + amp*Math.sin(t*spd+ph),
+        y: bp.y + amp*.65*Math.cos(t*spd*.8+ph+1.3),
       });
 
-      // Glow pulse on selected (solo sombra/borde, nunca tamaño inline)
-      if (isSel) {
-        const s = Math.sin(t * 1.55);
+      // Glow pulsante en el nodo seleccionado (solo sombra, no tamaño)
+      if(isSel){
+        const s=Math.sin(t*1.55);
         node.style({
-          'shadow-opacity': +(0.62 + 0.22 * s).toFixed(2),
-          'shadow-blur': Math.round(36 + 11 * s),
-          'border-opacity': +(0.65 + 0.18 * s).toFixed(2),
+          'shadow-opacity':+(.62+.22*s).toFixed(2),
+          'shadow-blur':Math.round(36+11*s),
+          'border-opacity':+(.65+.18*s).toFixed(2),
         });
       }
     });
 
-    cy.edges('.e-on').forEach((edge, i) => {
-      if (!edge.inside()) return;
-      edge.style('opacity', +(0.68 + 0.22 * Math.sin(t * 1.4 + i)).toFixed(2));
+    // Pulso en aristas activas
+    cy.edges('.e-on').forEach((edge,i)=>{
+      if(!edge.inside()) return;
+      edge.style('opacity',+(.68+.22*Math.sin(t*1.4+i)).toFixed(2));
     });
-  } catch(e) {}
+  }catch(e){}
 
-  if (animRunning) animFrame = requestAnimationFrame(ambientLoop);
+  if(animRunning) animFrame=requestAnimationFrame(animLoop);
 }
 
-function startAmbient() {
-  stopAmbient();
-  animStart = null; animRunning = true;
-  animFrame = requestAnimationFrame(ambientLoop);
+function startAnim(){
+  stopAnim();
+  animStart=null; animRunning=true;
+  animFrame=requestAnimationFrame(animLoop);
 }
-function stopAmbient() {
-  animRunning = false;
-  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-}
-
-// ════════════════════════════════════════════════════════
-//  EDITOR
-// ════════════════════════════════════════════════════════
-let edOpen = false, edSelId = null;
-
-function toggleEditor() {
-  edOpen = !edOpen;
-  document.getElementById('editor').classList.toggle('open', edOpen);
-  document.getElementById('btn-edit').textContent = edOpen ? '[×]' : '[EDIT]';
-  if (edOpen) refreshEdList();
-}
-
-function refreshEdList() {
-  const list = document.getElementById('ed-list');
-  const pSel = document.getElementById('ed-new-parent');
-  list.innerHTML = ''; pSel.innerHTML = '';
-
-  Object.values(NODES).forEach(n => {
-    const item = document.createElement('div');
-    item.className = 'ed-ni' + (n.id === edSelId ? ' on' : '');
-    item.textContent = n.id + ' — ' + n.label.replace('\n', ' ');
-    item.onclick = () => edSelect(n.id);
-    list.appendChild(item);
-
-    const opt = document.createElement('option');
-    opt.value = n.id;
-    opt.textContent = n.id + ' (' + n.label.replace('\n', ' ') + ')';
-    pSel.appendChild(opt);
-  });
-}
-
-function edSelect(id) {
-  edSelId = id;
-  const n = NODES[id], c = CONTENT[id] || {};
-  document.getElementById('ed-sel-id').textContent = id;
-  document.getElementById('ed-label').value    = n.label;
-  document.getElementById('ed-category').value = n.category;
-  document.getElementById('ed-title').value    = c.title || '';
-  document.getElementById('ed-html').value     = c.html  || '';
-  refreshEdList();
-}
-
-function saveEdit() {
-  if (!edSelId) { edMsg('Selecciona un nodo'); return; }
-  const id = edSelId;
-  const label = document.getElementById('ed-label').value.trim();
-  const cat   = document.getElementById('ed-category').value;
-  const title = document.getElementById('ed-title').value.trim();
-  const html  = document.getElementById('ed-html').value;
-  const color = CAT_COLORS[cat] || '#fff';
-
-  NODES[id].label = label;
-  NODES[id].category = cat;
-  if (!CONTENT[id]) CONTENT[id] = { color, category: cat, title, html };
-  else Object.assign(CONTENT[id], { color, category: cat, title, html });
-
-  const cyNode = cy.getElementById(id);
-  if (cyNode.length) cyNode.data({ label, category: cat });
-
-  saveData();
-  edMsg('✓ Guardado');
-  refreshEdList();
-}
-
-function deleteNode() {
-  if (!edSelId) { edMsg('Selecciona un nodo'); return; }
-  const id = edSelId;
-  if (id === 'canal') { edMsg('No se puede eliminar la raíz'); return; }
-  if ((CHILDREN[id] || []).length) { edMsg('Elimina antes sus hijos: ' + CHILDREN[id].join(', ')); return; }
-
-  const pid = PARENT[id];
-  if (pid && CHILDREN[pid]) CHILDREN[pid] = CHILDREN[pid].filter(c => c !== id);
-  delete NODES[id]; delete CHILDREN[id]; delete PARENT[id]; delete CONTENT[id];
-  edSelId = null;
-  document.getElementById('ed-sel-id').textContent = '—';
-  saveData(); edMsg('✓ Nodo eliminado');
-  buildFullGraph(); buildSephiroth(); refreshEdList();
-}
-
-function addNode() {
-  const id    = document.getElementById('ed-new-id').value.trim();
-  const label = document.getElementById('ed-new-label').value.trim();
-  const pid   = document.getElementById('ed-new-parent').value;
-  const cat   = document.getElementById('ed-new-cat').value;
-
-  if (!id || !label || !pid) { edMsg('Rellena todos los campos'); return; }
-  if (NODES[id]) { edMsg('ID ya existe'); return; }
-  if (!/^[a-z0-9_-]+$/.test(id)) { edMsg('ID: solo a-z, 0-9, guión'); return; }
-
-  NODES[id] = { id, label, category: cat };
-  CHILDREN[id] = [];
-  PARENT[id] = pid;
-  if (!CHILDREN[pid]) CHILDREN[pid] = [];
-  CHILDREN[pid].push(id);
-  CONTENT[id] = { color: CAT_COLORS[cat] || '#fff', category: cat, title: label, html: `<p>${label}</p>` };
-
-  document.getElementById('ed-new-id').value = '';
-  document.getElementById('ed-new-label').value = '';
-  saveData(); edMsg('✓ Nodo añadido: ' + id);
-  buildFullGraph(); buildSephiroth(); refreshEdList();
-}
-
-function resetAll() {
-  if (!confirm('¿Resetear todo al estado original?')) return;
-  localStorage.removeItem('mapa-v2');
-  location.reload();
-}
-
-function edMsg(msg) {
-  const el = document.getElementById('ed-msg');
-  el.textContent = msg;
-  setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+function stopAnim(){
+  animRunning=false;
+  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
 }
 
 // ════════════════════════════════════════════════════════
-//  SEPHIROTH MINIMAP
+//  MINIMAPA SEPHIROTH
 // ════════════════════════════════════════════════════════
-const SEPH_COLORS = { root:'#a855f7', proxy:'#22d3ee', proyectos:'#fb923c', contenidos:'#4ade80' };
-const SEPH_POS = {
-  canal:     { x:80, y:16  },
-  proxy:     { x:35, y:46  }, proyectos: { x:80, y:52  }, contenidos: { x:125, y:46 },
-  autor:     { x:22, y:78  }, libros:    { x:48, y:82  }, ayudar:    { x:35, y:108 },
-  ariadna:   { x:65, y:82  }, teseo:     { x:80, y:96  }, galatea:   { x:95, y:82  },
-  tematicas: { x:125, y:78 },
-  contacto:  { x:12, y:130 }, linktree:  { x:32, y:135 },
-  polaris:   { x:35, y:158 }, arcana:    { x:52, y:164 }, grimorio:  { x:18, y:164 },
-  poetica:   { x:112,y:108 }, ciencia:   { x:138,y:108 }, filosofia: { x:125,y:135 },
+const SEPH_COLORS={root:'#a855f7',proxy:'#22d3ee',proyectos:'#fb923c',contenidos:'#4ade80'};
+const SEPH_POS={
+  canal:    {x:80,y:16},
+  proxy:    {x:35,y:46},  proyectos:{x:80,y:52},  contenidos:{x:125,y:46},
+  autor:    {x:22,y:78},  libros:   {x:48,y:82},  ayudar:    {x:35,y:108},
+  ariadna:  {x:65,y:82},  teseo:    {x:80,y:96},  galatea:   {x:95,y:82},
+  tematicas:{x:125,y:78},
+  contacto: {x:12,y:130}, linktree: {x:32,y:135},
+  polaris:  {x:35,y:158}, arcana:   {x:52,y:164}, grimorio:  {x:18,y:164},
+  poetica:  {x:112,y:108},ciencia:  {x:138,y:108},filosofia: {x:125,y:135},
 };
 
-function computeSephPos() {
-  const res = { ...SEPH_POS };
-  const queue = ['canal'], seen = new Set(['canal']);
-  while (queue.length) {
-    const pid = queue.shift();
-    (CHILDREN[pid] || []).forEach(c => { if (!seen.has(c)) { seen.add(c); queue.push(c); } });
-    if (!res[pid]) continue;
-    const unpos = (CHILDREN[pid] || []).filter(c => !SEPH_POS[c]);
-    if (!unpos.length) continue;
-    const spread = (unpos.length - 1) * 14;
-    unpos.forEach((cid, i) => {
-      if (res[cid]) return;
-      res[cid] = {
-        x: Math.max(8, Math.min(152, res[pid].x - spread/2 + i*14)),
-        y: Math.min(170, res[pid].y + 20),
-      };
+function computeSephPos(){
+  const res={...SEPH_POS};
+  const queue=['canal'],seen=new Set(['canal']);
+  while(queue.length){
+    const pid=queue.shift();
+    (CHILDREN[pid]||[]).forEach(c=>{if(!seen.has(c)){seen.add(c);queue.push(c);}});
+    if(!res[pid]) continue;
+    const unpos=(CHILDREN[pid]||[]).filter(c=>!SEPH_POS[c]);
+    if(!unpos.length) continue;
+    const spread=(unpos.length-1)*14;
+    unpos.forEach((cid,i)=>{
+      if(res[cid]) return;
+      res[cid]={x:Math.max(8,Math.min(152,res[pid].x-spread/2+i*14)),y:Math.min(170,res[pid].y+20)};
     });
   }
   return res;
 }
 
-function buildSephiroth() {
-  const pos = computeSephPos();
-  const eg = document.getElementById('seph-edges');
-  const ng = document.getElementById('seph-nodes');
-  eg.innerHTML = ''; ng.innerHTML = '';
-  const NS = 'http://www.w3.org/2000/svg';
-
-  Object.entries(CHILDREN).forEach(([pid, kids]) => {
-    if (!pos[pid]) return;
-    kids.forEach(cid => {
-      if (!pos[cid]) return;
-      const l = document.createElementNS(NS, 'line');
-      l.setAttribute('x1', pos[pid].x); l.setAttribute('y1', pos[pid].y);
-      l.setAttribute('x2', pos[cid].x); l.setAttribute('y2', pos[cid].y);
-      l.dataset.from = pid; l.dataset.to = cid;
+function buildSephiroth(){
+  const pos=computeSephPos();
+  const eg=document.getElementById('seph-edges');
+  const ng=document.getElementById('seph-nodes');
+  eg.innerHTML='';ng.innerHTML='';
+  const NS='http://www.w3.org/2000/svg';
+  Object.entries(CHILDREN).forEach(([pid,kids])=>{
+    if(!pos[pid]) return;
+    kids.forEach(cid=>{
+      if(!pos[cid]) return;
+      const l=document.createElementNS(NS,'line');
+      l.setAttribute('x1',pos[pid].x);l.setAttribute('y1',pos[pid].y);
+      l.setAttribute('x2',pos[cid].x);l.setAttribute('y2',pos[cid].y);
+      l.dataset.from=pid;l.dataset.to=cid;
       eg.appendChild(l);
     });
   });
-
-  Object.entries(pos).forEach(([id, p]) => {
-    if (!NODES[id]) return;
-    const color = SEPH_COLORS[NODES[id].category] || '#fff';
-    const c = document.createElementNS(NS, 'circle');
-    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 6);
-    c.setAttribute('fill', color); c.setAttribute('fill-opacity', 0.38);
-    c.style.color = color; c.dataset.id = id;
-    c.addEventListener('click', () => selectNode(id, true));
+  Object.entries(pos).forEach(([id,p])=>{
+    if(!NODES[id]) return;
+    const color=SEPH_COLORS[NODES[id].category]||'#fff';
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',6);
+    c.setAttribute('fill',color);c.setAttribute('fill-opacity',.38);
+    c.style.color=color;c.dataset.id=id;
+    c.addEventListener('click',()=>applySelection(id,true));
     ng.appendChild(c);
-
-    const lbl = document.createElementNS(NS, 'text');
-    lbl.setAttribute('x', p.x); lbl.setAttribute('y', p.y + 12);
-    lbl.classList.add('seph-label'); lbl.dataset.id = id;
-    lbl.textContent = NODES[id].label.replace('\n', ' ');
-    lbl.addEventListener('click', () => selectNode(id, true));
-    lbl.style.cursor = 'pointer';
+    const lbl=document.createElementNS(NS,'text');
+    lbl.setAttribute('x',p.x);lbl.setAttribute('y',p.y+12);
+    lbl.classList.add('seph-label');lbl.dataset.id=id;
+    lbl.textContent=NODES[id].label.replace('\n',' ');
+    lbl.addEventListener('click',()=>applySelection(id,true));
+    lbl.style.cursor='pointer';
     ng.appendChild(lbl);
   });
 }
 
-function updateSephiroth(activeId) {
-  const path = new Set(pathTo(activeId));
-  document.querySelectorAll('#seph-nodes circle').forEach(c => {
-    const id = c.dataset.id;
-    if (id === activeId) { c.classList.add('seph-active'); c.setAttribute('fill-opacity', 1); }
-    else if (path.has(id)) { c.classList.remove('seph-active'); c.setAttribute('fill-opacity', 0.65); }
-    else { c.classList.remove('seph-active'); c.setAttribute('fill-opacity', 0.22); }
+function updateSephiroth(activeId){
+  const path=new Set(pathTo(activeId));
+  document.querySelectorAll('#seph-nodes circle').forEach(c=>{
+    const id=c.dataset.id;
+    if(id===activeId){c.classList.add('seph-active');c.setAttribute('fill-opacity',1);}
+    else if(path.has(id)){c.classList.remove('seph-active');c.setAttribute('fill-opacity',.65);}
+    else{c.classList.remove('seph-active');c.setAttribute('fill-opacity',.22);}
   });
-  document.querySelectorAll('#seph-nodes .seph-label').forEach(l => {
-    l.classList.toggle('label-active', l.dataset.id === activeId);
+  document.querySelectorAll('#seph-nodes .seph-label').forEach(l=>{
+    l.classList.toggle('label-active',l.dataset.id===activeId);
   });
-  document.querySelectorAll('#seph-edges line').forEach(l => {
-    l.classList.toggle('path-active', path.has(l.dataset.from) && path.has(l.dataset.to));
+  document.querySelectorAll('#seph-edges line').forEach(l=>{
+    l.classList.toggle('path-active',path.has(l.dataset.from)&&path.has(l.dataset.to));
   });
 }
 
 // ════════════════════════════════════════════════════════
-//  BOOT
+//  ARRANQUE
 // ════════════════════════════════════════════════════════
 buildSephiroth();
-buildFullGraph();
+buildGraph();
 </script>
 </body>
 </html>
