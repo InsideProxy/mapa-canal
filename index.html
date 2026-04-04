@@ -774,8 +774,27 @@ function closePanel() { document.getElementById('panel').classList.remove('open'
 // ════════════════════════════════════════════════════════
 //  EVENTS
 // ════════════════════════════════════════════════════════
-cy.on('tap', 'node', evt => selectNode(evt.target.id(), true));
-cy.on('tap', evt => { if (evt.target === cy) closePanel(); });
+// Click nativo: fiable aunque la animación esté moviendo nodos
+document.getElementById('cy').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  let hit = null, minDist = Infinity;
+  cy.nodes().forEach(node => {
+    const rp = node.renderedPosition();
+    const hw = node.renderedOuterWidth()  / 2 + 8;
+    const hh = node.renderedOuterHeight() / 2 + 8;
+    if (Math.abs(rp.x - mx) <= hw && Math.abs(rp.y - my) <= hh) {
+      const d = Math.hypot(rp.x - mx, rp.y - my);
+      if (d < minDist) { minDist = d; hit = node; }
+    }
+  });
+
+  if (hit) selectNode(hit.id(), true);
+  else closePanel();
+});
+
 cy.on('mouseover', 'node', () => document.body.style.cursor = 'pointer');
 cy.on('mouseout',  'node', () => document.body.style.cursor = 'default');
 
