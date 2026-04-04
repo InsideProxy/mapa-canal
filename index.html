@@ -715,6 +715,9 @@ function selectNode(id, showPanel = true) {
     ...(PARENT[id] != null ? [PARENT[id]] : []),
   ]);
 
+  // Limpiar estilos inline antes de que las clases tomen el control
+  cy.nodes().removeStyle('width height shadow-blur shadow-opacity border-opacity border-width');
+
   cy.nodes().forEach(node => {
     node.removeClass('sel neighbor distant');
     const nid = node.id();
@@ -770,6 +773,16 @@ function closePanel() { document.getElementById('panel').classList.remove('open'
 // ════════════════════════════════════════════════════════
 //  EVENTS
 // ════════════════════════════════════════════════════════
+const grabbed = new Set();
+cy.on('grab',  'node', evt => grabbed.add(evt.target.id()));
+cy.on('free',  'node', evt => {
+  const node = evt.target;
+  grabbed.delete(node.id());
+  // Actualizar base de animación a la nueva posición libre
+  const p = node.position();
+  node.data({ _bx: p.x, _by: p.y });
+});
+
 cy.on('tap', 'node', evt => selectNode(evt.target.id(), true));
 cy.on('tap', evt => { if (evt.target === cy) closePanel(); });
 cy.on('mouseover', 'node', () => document.body.style.cursor = 'pointer');
@@ -800,6 +813,7 @@ function ambientLoop(ts) {
       const isSel = node.hasClass('sel');
       const isNbr = node.hasClass('neighbor');
       const isCard = node.data('type') === 'card';
+      if (grabbed.has(node.id())) return; // no interferir con el drag del usuario
       const bx = node.data('_bx'), by = node.data('_by');
       if (bx === undefined) return;
 
@@ -813,16 +827,14 @@ function ambientLoop(ts) {
         y: by + amp * 0.65 * Math.cos(t * spd * 0.78 + ph + 1.3),
       });
 
-      // Glow pulse on selected
+      // Glow pulse on selected (solo sombra/borde, nunca tamaño inline)
       if (isSel) {
         const s = Math.sin(t * 1.55);
-        const upd = {
+        node.style({
           'shadow-opacity': +(0.62 + 0.22 * s).toFixed(2),
           'shadow-blur': Math.round(36 + 11 * s),
           'border-opacity': +(0.65 + 0.18 * s).toFixed(2),
-        };
-        if (!isCard) { const sz = Math.round(70 + 4 * s); upd['width'] = sz; upd['height'] = sz; }
-        node.style(upd);
+        });
       }
     });
 
