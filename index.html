@@ -638,6 +638,7 @@ const cy = cytoscape({
   userPanningEnabled: true,
   wheelSensitivity: 0.16,
   minZoom: 0.08, maxZoom: 5,
+  autoungrabify: true,
 });
 
 // ════════════════════════════════════════════════════════
@@ -773,16 +774,6 @@ function closePanel() { document.getElementById('panel').classList.remove('open'
 // ════════════════════════════════════════════════════════
 //  EVENTS
 // ════════════════════════════════════════════════════════
-const grabbed = new Set();
-cy.on('grab',  'node', evt => grabbed.add(evt.target.id()));
-cy.on('free',  'node', evt => {
-  const node = evt.target;
-  grabbed.delete(node.id());
-  // Actualizar base de animación a la nueva posición libre
-  const p = node.position();
-  node.data({ _bx: p.x, _by: p.y });
-});
-
 cy.on('tap', 'node', evt => selectNode(evt.target.id(), true));
 cy.on('tap', evt => { if (evt.target === cy) closePanel(); });
 cy.on('mouseover', 'node', () => document.body.style.cursor = 'pointer');
@@ -813,7 +804,6 @@ function ambientLoop(ts) {
       const isSel = node.hasClass('sel');
       const isNbr = node.hasClass('neighbor');
       const isCard = node.data('type') === 'card';
-      if (grabbed.has(node.id())) return; // no interferir con el drag del usuario
       const bx = node.data('_bx'), by = node.data('_by');
       if (bx === undefined) return;
 
