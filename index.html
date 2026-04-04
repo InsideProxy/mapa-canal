@@ -6,159 +6,335 @@
   <title>Proxy — Mapa del Canal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
   <style>
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    :root {
-      --bg:       #020208;
-      --border:   rgba(0,210,255,0.08);
-      --border-hi:rgba(0,210,255,0.20);
-      --text:     #bfd0e0;
-      --text-dim: rgba(191,208,224,0.38);
-      --c-root:   #a855f7;
-      --c-proxy:  #22d3ee;
-      --c-proj:   #fb923c;
-      --c-cont:   #4ade80;
-      --mono:     'JetBrains Mono', monospace;
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: #050510;
+      color: #dde0f5;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden; font-size:12px; }
+    /* ── BACKGROUND SYSTEM ──────────────────── */
+    .bg-layer {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-size: cover;
+      background-position: center;
+      transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+      z-index: 0;
+    }
+    .bg-layer.active { opacity: 1; }
+    .bg-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(5,5,16,0.55) 0%, rgba(5,5,16,0.85) 70%);
+      z-index: 1;
+    }
 
-    /* Rejilla de fondo */
-    #grid { position:fixed; inset:0; z-index:1; pointer-events:none;
-      background-image: linear-gradient(rgba(0,210,255,.022) 1px,transparent 1px),
-                        linear-gradient(90deg,rgba(0,210,255,.022) 1px,transparent 1px);
-      background-size:44px 44px; }
+    /* ── PARTICLES ───────────────────────────── */
+    #particles {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      animation: float linear infinite;
+    }
+    @keyframes float {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
 
-    /* Fondos por categoría */
-    .bg-layer { position:fixed; inset:0; background-size:cover; background-position:center; transition:opacity 1.2s ease; opacity:0; z-index:0; }
-    .bg-layer.active { opacity:1; }
-    .bg-overlay { position:fixed; inset:0; background:radial-gradient(ellipse at 40% 35%,rgba(2,2,10,.4) 0%,rgba(2,2,10,.92) 75%); z-index:1; }
+    #cy {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      z-index: 3;
+      background: transparent;
+    }
 
-    /* Partículas */
-    #particles { position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden; }
-    .particle { position:absolute; width:1px; height:1px; background:rgba(0,210,255,.32); animation:pfloat linear infinite; }
-    @keyframes pfloat { 0%{transform:translateY(100vh) scale(0);opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{transform:translateY(-10vh) scale(1);opacity:0} }
-
-    /* Cytoscape */
-    #cy { position:fixed; inset:40px 0 0 0; z-index:3; background:transparent; }
-
-    /* Barra superior */
+    /* ── TOP BAR ─────────────────────────────── */
     #topbar {
-      position:fixed; top:0; left:0; right:0; height:40px;
-      background:rgba(2,2,12,.85); border-bottom:1px solid var(--border-hi);
-      backdrop-filter:blur(20px); display:flex; align-items:center;
-      padding:0 14px; gap:10px; z-index:200;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 50px;
+      background: rgba(5,5,16,0.65);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 12px;
+      z-index: 200;
     }
-    #topbar-logo { font-family:var(--mono); font-size:10px; color:var(--c-proxy); letter-spacing:3px; text-transform:uppercase; flex-shrink:0; text-shadow:0 0 14px var(--c-proxy); }
-    .t-sep { width:1px; height:16px; background:var(--border-hi); flex-shrink:0; }
-    #breadcrumb { display:flex; align-items:center; gap:4px; font-size:10px; overflow:hidden; flex:1; font-family:var(--mono); }
-    .bc { color:rgba(191,208,224,.22); white-space:nowrap; cursor:pointer; transition:color .2s; }
-    .bc:hover { color:var(--c-proxy); }
-    .bc.cur { color:rgba(191,208,224,.65); cursor:default; }
-    .bc-sep { color:var(--border-hi); }
-    #topbar-hint { font-size:9px; color:rgba(191,208,224,.14); white-space:nowrap; flex-shrink:0; font-family:var(--mono); }
 
-    /* Panel lateral derecho */
-    #panel {
-      position:fixed; top:40px; right:0; bottom:0; width:270px;
-      background:rgba(3,3,16,.92); border-left:1px solid var(--border-hi);
-      backdrop-filter:blur(28px);
-      transform:translateX(100%); transition:transform .32s cubic-bezier(.4,0,.2,1);
-      z-index:150; overflow-y:auto;
-      scrollbar-width:thin; scrollbar-color:rgba(0,210,255,.08) transparent;
+    #btn-back {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 5px 14px;
+      color: #8aafff;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.25s;
+      flex-shrink: 0;
     }
-    #panel.open { transform:translateX(0); }
-    #panel-inner { padding:20px 18px 56px; }
+    #btn-back:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+    #btn-back.vis { display: flex; }
+
+    #breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      overflow: hidden;
+      flex: 1;
+    }
+    .bc { color: rgba(255,255,255,0.25); white-space: nowrap; cursor: pointer; transition: color 0.2s; }
+    .bc:hover { color: #8aafff; }
+    .bc.cur { color: rgba(255,255,255,0.7); cursor: default; }
+    .bc-sep { color: rgba(255,255,255,0.12); font-size: 11px; }
+
+    #topbar-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,0.18);
+      white-space: nowrap;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    /* ── PANEL ───────────────────────────────── */
+    #panel {
+      position: fixed;
+      top: 50px; right: 0; bottom: 0;
+      width: 456px;
+      background: rgba(8,8,22,0.75);
+      border-left: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+      z-index: 150;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.08) transparent;
+    }
+    #panel.open { transform: translateX(0); }
+
+    #panel-inner { padding: 34px 29px 72px; }
 
     #btn-close {
-      position:absolute; top:10px; right:10px;
-      background:transparent; border:1px solid var(--border);
-      color:var(--text-dim); width:22px; height:22px;
-      cursor:pointer; font-size:10px; font-family:var(--mono);
-      display:flex; align-items:center; justify-content:center; transition:all .2s;
+      position: absolute;
+      top: 14px; right: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.3);
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
     }
-    #btn-close:hover { border-color:var(--c-proxy); color:var(--c-proxy); }
+    #btn-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-    #p-cat   { font-family:var(--mono); font-size:8px; letter-spacing:3px; text-transform:uppercase; margin-bottom:7px; }
-    #p-title { font-size:17px; font-weight:700; color:#fff; line-height:1.3; margin-bottom:14px; }
-    #p-body  { font-size:11px; line-height:1.88; color:rgba(191,208,224,.6); }
-    #p-body p { margin-bottom:11px; }
-    #p-body p:last-child { margin-bottom:0; }
-    #p-body strong { color:rgba(191,208,224,.9); }
-    #p-body em     { color:rgba(191,208,224,.74); }
-    #p-body a      { color:var(--c-proxy); text-decoration:none; }
-    #p-body a:hover{ text-decoration:underline; }
-    #p-body ul  { margin:7px 0 11px 16px; line-height:2; }
-    #p-body pre { font-family:var(--mono); font-size:9px; color:rgba(191,208,224,.5); line-height:1.7;
-                  background:rgba(0,210,255,.03); border:1px solid var(--border);
-                  padding:9px 10px; margin:9px 0; overflow-x:auto; white-space:pre; }
-    .hr { height:1px; background:var(--border); margin:14px 0; }
-    #p-body img { width:100%; margin-bottom:11px; display:block; object-fit:cover; border:1px solid var(--border); }
+    #p-cat  {
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    #p-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.35;
+      margin-bottom: 24px;
+    }
+    #p-body  { font-size: 17px; line-height: 1.9; color: rgba(255,255,255,0.55); }
+    #p-body p { margin-bottom: 17px; }
+    #p-body p:last-child { margin-bottom: 0; }
+    #p-body strong { color: rgba(255,255,255,0.85); }
+    #p-body em { color: rgba(255,255,255,0.7); }
+    #p-body a { color: #7eb8f7; text-decoration: none; }
+    #p-body a:hover { text-decoration: underline; }
+    #p-body ul { margin: 10px 0 17px 22px; line-height: 2.1; }
+    .hr { height: 1px; background: rgba(255,255,255,0.06); margin: 22px 0; }
+    #p-body img { width: 100%; border-radius: 8px; margin-bottom: 16px; display: block; object-fit: cover; }
 
     .lbtn {
-      display:inline-flex; align-items:center; gap:5px;
-      margin-top:9px; padding:6px 12px;
-      background:rgba(0,210,255,.04); border:1px solid rgba(0,210,255,.18);
-      color:var(--c-proxy) !important; font-size:10px; font-family:var(--mono);
-      text-decoration:none !important; transition:all .2s;
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 16px; padding: 10px 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: #8aafff !important;
+      font-size: 16px; font-weight: 500;
+      text-decoration: none !important;
+      transition: all 0.25s;
+      backdrop-filter: blur(10px);
     }
-    .lbtn:hover { background:rgba(0,210,255,.1) !important; border-color:rgba(0,210,255,.38); }
+    .lbtn:hover { background: rgba(255,255,255,0.1) !important; border-color: rgba(255,255,255,0.18); }
 
     .badge {
-      display:inline-block; padding:2px 8px;
-      font-family:var(--mono); font-size:8px; font-weight:700;
-      letter-spacing:2px; text-transform:uppercase; margin-bottom:9px;
-      background:rgba(0,210,255,.05); color:var(--c-proxy); border:1px solid rgba(0,210,255,.18);
+      display: inline-block; padding: 3px 12px;
+      border-radius: 20px; font-size: 12px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 14px;
+      background: rgba(255,255,255,0.05);
+      color: #7eb8f7;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
-    /* Leyenda */
+    /* ── LEGEND ──────────────────────────────── */
     #legend {
-      position:fixed; bottom:212px; left:10px;
-      background:rgba(2,2,12,.72); border:1px solid var(--border);
-      padding:9px 13px; z-index:100; backdrop-filter:blur(18px);
+      position: fixed; bottom: 228px; left: 16px;
+      background: rgba(5,5,16,0.6);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 14px 18px;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
-    #legend h4 { font-family:var(--mono); font-size:7px; letter-spacing:2.5px; text-transform:uppercase; color:rgba(191,208,224,.2); margin-bottom:7px; }
-    .li { display:flex; align-items:center; gap:6px; font-size:9px; color:rgba(191,208,224,.32); margin-bottom:4px; }
-    .li:last-child { margin-bottom:0; }
-    .ld { width:6px; height:6px; flex-shrink:0; box-shadow:0 0 5px currentColor; }
+    #legend h4 {
+      font-size: 9px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .li { display: flex; align-items: center; gap: 9px; font-size: 11px; color: rgba(255,255,255,0.35); margin-bottom: 7px; font-weight: 500; }
+    .li:last-child { margin-bottom: 0; }
+    .ld {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px currentColor;
+    }
 
-    /* Minimapa sephiroth */
-    #sephiroth { position:fixed; bottom:10px; left:10px; width:160px; height:195px; z-index:100; pointer-events:auto; opacity:.38; transition:opacity .4s; }
-    #sephiroth:hover { opacity:.9; }
-    #sephiroth line { stroke:rgba(0,210,255,.07); stroke-width:1; transition:stroke .4s; }
-    #sephiroth line.path-active { stroke:rgba(0,210,255,.28); stroke-width:1.5; }
-    #sephiroth circle { cursor:pointer; transition:r .3s,fill-opacity .3s; }
-    #sephiroth circle:hover { r:8; fill-opacity:1; }
-    #sephiroth .seph-active { r:8; fill-opacity:1; filter:drop-shadow(0 0 5px currentColor); }
-    #sephiroth .seph-label { font-family:var(--mono); font-size:5.5px; fill:rgba(191,208,224,.22); text-anchor:middle; pointer-events:none; }
-    #sephiroth .seph-label.label-active { fill:rgba(191,208,224,.82); }
+    /* ── NODE COUNTER ────────────────────────── */
+    #node-hint {
+      position: fixed; bottom: 20px; right: 16px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.12);
+      z-index: 100;
+      font-weight: 500;
+    }
+
+    /* ── SEPHIROTH MINIMAP ──────────────────── */
+    #sephiroth {
+      position: fixed;
+      bottom: 20px;
+      left: 16px;
+      width: 170px;
+      height: 200px;
+      z-index: 100;
+      pointer-events: auto;
+      opacity: 0.5;
+      transition: opacity 0.4s;
+    }
+    #sephiroth:hover { opacity: 1; }
+    #sephiroth line {
+      stroke: rgba(255,255,255,0.1);
+      stroke-width: 1;
+      transition: stroke 0.4s, stroke-opacity 0.4s;
+    }
+    #sephiroth line.path-active {
+      stroke: rgba(255,255,255,0.35);
+      stroke-width: 1.5;
+    }
+    #sephiroth circle {
+      cursor: pointer;
+      transition: r 0.3s, fill-opacity 0.3s, filter 0.3s;
+    }
+    #sephiroth circle:hover {
+      r: 9;
+      fill-opacity: 1;
+    }
+    #sephiroth .seph-active {
+      r: 9;
+      fill-opacity: 1;
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+    #sephiroth .seph-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 6px;
+      fill: rgba(255,255,255,0.3);
+      text-anchor: middle;
+      pointer-events: none;
+      transition: fill 0.3s;
+    }
+    #sephiroth .seph-label.label-active {
+      fill: rgba(255,255,255,0.8);
+      font-weight: 600;
+    }
+
+    /* ── CATEGORY TRANSITION INDICATOR ───────── */
+    #category-indicator {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: rgba(255,255,255,0);
+      z-index: 50;
+      pointer-events: none;
+      transition: color 0.6s;
+    }
+    #category-indicator.show {
+      color: rgba(255,255,255,0.15);
+    }
   </style>
 </head>
 <body>
 
-<div id="grid"></div>
-<div class="bg-layer" id="bg-root"       style="background-image:url('img/stars.png')"></div>
-<div class="bg-layer" id="bg-proxy"      style="background-image:url('img/neuron.png')"></div>
-<div class="bg-layer" id="bg-proyectos"  style="background-image:url('img/alchemy.png')"></div>
+<!-- Background layers for crossfade -->
+<div class="bg-layer" id="bg-root" style="background-image:url('img/stars.png')"></div>
+<div class="bg-layer" id="bg-proxy" style="background-image:url('img/neuron.png')"></div>
+<div class="bg-layer" id="bg-proyectos" style="background-image:url('img/alchemy.png')"></div>
 <div class="bg-layer" id="bg-contenidos" style="background-image:url('img/library.png')"></div>
 <div class="bg-overlay"></div>
+
+<!-- Floating particles -->
 <div id="particles"></div>
 
 <div id="topbar">
-  <span id="topbar-logo">PROXY</span>
-  <div class="t-sep"></div>
+  <button id="btn-back" onclick="goBack()"></button>
   <div id="breadcrumb"></div>
-  <span id="topbar-hint">haz clic en un nodo</span>
+  <span id="topbar-hint">Clic en un nodo para explorar</span>
 </div>
 
 <div id="cy"></div>
 
 <div id="panel">
   <div id="panel-inner">
-    <button id="btn-close" onclick="closePanel()">✕</button>
+    <button id="btn-close" onclick="closePanel()">&#10005;</button>
     <div id="p-cat"></div>
     <div id="p-title"></div>
     <div id="p-body"></div>
@@ -166,76 +342,92 @@
 </div>
 
 <div id="legend">
-  <h4>Categorías</h4>
-  <div class="li"><div class="ld" style="color:#a855f7;background:#a855f7"></div>El Canal</div>
-  <div class="li"><div class="ld" style="color:#22d3ee;background:#22d3ee"></div>Proxy</div>
-  <div class="li"><div class="ld" style="color:#fb923c;background:#fb923c"></div>Proyectos</div>
-  <div class="li"><div class="ld" style="color:#4ade80;background:#4ade80"></div>Contenidos</div>
+  <h4>Categorias</h4>
+  <div class="li"><div class="ld" style="color:#a78bfa;background:#a78bfa"></div>El Canal</div>
+  <div class="li"><div class="ld" style="color:#67e8f9;background:#67e8f9"></div>Proxy</div>
+  <div class="li"><div class="ld" style="color:#fbbf24;background:#fbbf24"></div>Proyectos</div>
+  <div class="li"><div class="ld" style="color:#6ee7b7;background:#6ee7b7"></div>Contenidos</div>
 </div>
 
+<div id="category-indicator"></div>
+
+<!-- Sephiroth Tree of Life Minimap -->
 <svg id="sephiroth" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+  <!-- Paths (edges) drawn first -->
   <g id="seph-edges"></g>
+  <!-- Nodes drawn on top -->
   <g id="seph-nodes"></g>
 </svg>
 
 <script>
 // ════════════════════════════════════════════════════════
-//  PARTÍCULAS
+//  PARTICLES
 // ════════════════════════════════════════════════════════
-(function(){
-  const c = document.getElementById('particles');
-  for (let i=0;i<28;i++){
+
+(function initParticles() {
+  const container = document.getElementById('particles');
+  const count = 35;
+  for (let i = 0; i < count; i++) {
     const p = document.createElement('div');
-    p.className='particle';
-    p.style.left = Math.random()*100+'%';
-    p.style.animationDuration = (14+Math.random()*26)+'s';
-    p.style.animationDelay   = (Math.random()*22)+'s';
-    const s = (.8+Math.random()*1.4)+'px';
-    p.style.width = p.style.height = s;
-    c.appendChild(p);
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (12 + Math.random() * 20) + 's';
+    p.style.animationDelay = (Math.random() * 15) + 's';
+    p.style.width = p.style.height = (1.5 + Math.random() * 2) + 'px';
+    container.appendChild(p);
   }
 })();
 
 // ════════════════════════════════════════════════════════
-//  FONDO POR CATEGORÍA
+//  BACKGROUND MANAGEMENT
 // ════════════════════════════════════════════════════════
-const BG_MAP = {root:'bg-root',proxy:'bg-proxy',proyectos:'bg-proyectos',contenidos:'bg-contenidos'};
+
+const BG_MAP = {
+  root: 'bg-root',
+  proxy: 'bg-proxy',
+  proyectos: 'bg-proyectos',
+  contenidos: 'bg-contenidos',
+};
+
 let currentBg = null;
-function switchBg(cat){
-  const id = BG_MAP[cat]||BG_MAP.root;
-  if(id===currentBg) return;
-  document.querySelectorAll('.bg-layer').forEach(el=>el.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  currentBg = id;
+
+function switchBackground(category) {
+  const bgId = BG_MAP[category] || BG_MAP.root;
+  if (bgId === currentBg) return;
+
+  document.querySelectorAll('.bg-layer').forEach(el => el.classList.remove('active'));
+  document.getElementById(bgId).classList.add('active');
+  currentBg = bgId;
 }
 
 // ════════════════════════════════════════════════════════
-//  DATOS — edita aquí para actualizar el mapa
+//  DATA
 // ════════════════════════════════════════════════════════
+
 const NODES = {
-  canal:         {id:'canal',         label:'El Canal',                category:'root'      },
-  proxy:         {id:'proxy',         label:'Proxy',                   category:'proxy'     },
-  autor:         {id:'autor',         label:'Sobre el\nAutor',         category:'proxy'     },
-  contacto:      {id:'contacto',      label:'Contacto',                category:'proxy'     },
-  linktree:      {id:'linktree',      label:'Linktree',                category:'proxy'     },
-  libros:        {id:'libros',        label:'Libros',                  category:'proxy'     },
-  polaris:       {id:'polaris',       label:'Polaris',                 category:'proxy'     },
-  arcana:        {id:'arcana',        label:'Arcana',                  category:'proxy'     },
-  grimorio:      {id:'grimorio',      label:'Grimorio del\nLaberinto', category:'proxy'     },
-  ayudar:        {id:'ayudar',        label:'Cómo\nAyudar',            category:'proxy'     },
-  proyectos:     {id:'proyectos',     label:'Proyectos',               category:'proyectos' },
-  ariadna:       {id:'ariadna',       label:'Proyecto\nAriadna',       category:'proyectos' },
-  teseo:         {id:'teseo',         label:'Proyecto\nTeseo',         category:'proyectos' },
-  galatea:       {id:'galatea',       label:'Proyecto\nGalatea',       category:'proyectos' },
-  pandora:       {id:'pandora',       label:'Proyecto\nPandora',       category:'proyectos' },
-  'pandora-hw':  {id:'pandora-hw',    label:'Hardware',  category:'proyectos',type:'card',image:'img/neuron.png' },
-  'pandora-esq': {id:'pandora-esq',   label:'Esquema',   category:'proyectos',type:'card',image:'img/stars.png'  },
-  'pandora-proto':{id:'pandora-proto',label:'Prototipo', category:'proyectos',type:'card',image:'img/alchemy.png'},
-  contenidos:    {id:'contenidos',    label:'Contenidos\ndel Canal',   category:'contenidos'},
-  tematicas:     {id:'tematicas',     label:'Temáticas',               category:'contenidos'},
-  poetica:       {id:'poetica',       label:'Poética',                 category:'contenidos'},
-  ciencia:       {id:'ciencia',       label:'Ciencia',                 category:'contenidos'},
-  filosofia:     {id:'filosofia',     label:'Filosofía',               category:'contenidos'},
+  canal:      { id:'canal',     label:'El Canal',              category:'root'       },
+  proxy:      { id:'proxy',     label:'Proxy',                 category:'proxy'      },
+  autor:      { id:'autor',     label:'Sobre el\nAutor',       category:'proxy'      },
+  contacto:   { id:'contacto',  label:'Contacto',              category:'proxy'      },
+  linktree:   { id:'linktree',  label:'Linktree',              category:'proxy'      },
+  libros:     { id:'libros',    label:'Libros',                category:'proxy'      },
+  polaris:    { id:'polaris',   label:'Polaris',               category:'proxy'      },
+  arcana:     { id:'arcana',    label:'Arcana',                category:'proxy'      },
+  grimorio:   { id:'grimorio',  label:'Grimorio del\nLaberinto', category:'proxy'    },
+  ayudar:     { id:'ayudar',    label:'Cómo\nAyudar',          category:'proxy'      },
+  proyectos:  { id:'proyectos', label:'Proyectos',             category:'proyectos'  },
+  ariadna:    { id:'ariadna',   label:'Proyecto\nAriadna',     category:'proyectos'  },
+  teseo:      { id:'teseo',     label:'Proyecto\nTeseo',       category:'proyectos'  },
+  galatea:    { id:'galatea',   label:'Proyecto\nGalatea',     category:'proyectos'  },
+  pandora:    { id:'pandora',       label:'Proyecto\nPandora',  category:'proyectos'  },
+  'pandora-hw':    { id:'pandora-hw',    label:'Hardware',   category:'proyectos', type:'card', image:'img/neuron.png'  },
+  'pandora-esq':   { id:'pandora-esq',   label:'Esquema',    category:'proyectos', type:'card', image:'img/stars.png'   },
+  'pandora-proto': { id:'pandora-proto', label:'Prototipo',  category:'proyectos', type:'card', image:'img/alchemy.png' },
+  contenidos: { id:'contenidos',label:'Contenidos\ndel Canal', category:'contenidos' },
+  tematicas:  { id:'tematicas', label:'Temáticas',             category:'contenidos' },
+  poetica:    { id:'poetica',   label:'Poética',               category:'contenidos' },
+  ciencia:    { id:'ciencia',   label:'Ciencia',               category:'contenidos' },
+  filosofia:  { id:'filosofia', label:'Filosofía',             category:'contenidos' },
 };
 
 const CHILDREN = {
@@ -247,130 +439,163 @@ const CHILDREN = {
   contenidos: ['tematicas'],
   tematicas:  ['poetica','ciencia','filosofia'],
   pandora:    ['pandora-hw','pandora-esq','pandora-proto'],
-  contacto:[],linktree:[],polaris:[],arcana:[],grimorio:[],ayudar:[],
-  ariadna:[],teseo:[],galatea:[],
-  'pandora-hw':[],'pandora-esq':[],'pandora-proto':[],
-  poetica:[],ciencia:[],filosofia:[],
+  contacto:[], linktree:[], polaris:[], arcana:[], grimorio:[], ayudar:[],
+  ariadna:[], teseo:[], galatea:[], 'pandora-hw':[], 'pandora-esq':[], 'pandora-proto':[], poetica:[], ciencia:[], filosofia:[],
 };
 
-// Construir PARENT a partir de CHILDREN
-const PARENT = {canal:null};
-Object.entries(CHILDREN).forEach(([p,cs])=>cs.forEach(c=>PARENT[c]=p));
+const PARENT = { canal: null };
+Object.entries(CHILDREN).forEach(([p, cs]) => cs.forEach(c => PARENT[c] = p));
 
-const CAT_COLORS = {root:'#a855f7',proxy:'#22d3ee',proyectos:'#fb923c',contenidos:'#4ade80'};
-
-// ─── CONTENIDO DE CADA NODO ──────────────────────────────────────────────────
-// Edita el HTML de cada entrada para actualizar el panel lateral
 const CONTENT = {
-  canal:{color:'#a855f7',category:'El Canal',title:'Proxy — El Canal',
+  canal: {
+    color:'#a78bfa', category:'El Canal', title:'Proxy — El Canal',
     html:`<p>Bienvenido al mapa interactivo del canal <strong>Proxy</strong>.</p>
-<p>Haz clic en cualquier nodo para explorar su contenido. Cada sección revela los proyectos, obras y temáticas que componen el canal.</p>`},
-
-  proxy:{color:'#22d3ee',category:'Proxy',title:'Proxy',
-    html:`<p>Sección dedicada al autor del canal, sus obras y sus medios de contacto.</p>`},
-
-  autor:{color:'#22d3ee',category:'Proxy',title:'Sobre el Autor',
+<p>Haz clic en cualquier nodo para expandirlo y descubrir su contenido. El nodo superior te lleva siempre al nivel anterior.</p>`
+  },
+  proxy: {
+    color:'#67e8f9', category:'Proxy', title:'Proxy',
+    html:`<p>Sección dedicada al autor del canal, sus obras y sus medios de contacto.</p>`
+  },
+  autor: {
+    color:'#67e8f9', category:'Proxy', title:'Sobre el Autor',
     html:`<p>Proxy es <strong>Juan Boza Samanes</strong>. Natural de Zaragoza. Estudió Derecho y es máster en auditoría y gestión de TIC, máster en Derecho Bancario y Financiero de Consumo, y máster en Etología de conflictos sociales y políticos.</p>
 <div class="hr"></div>
 <p>Su afán por la ciencia le llevó a cambiar radicalmente de carrera. Estudió máster en neuropsicología clínica y máster en ciencias cognitivas. Se especializó en bases biológicas del aprendizaje y en la relación entre tecnología y cerebro.</p>
-<p>Lleva cuatro años dedicándose a bases biológicas de la conciencia y teoría de la mente, intentando desarrollar filosofía de la conciencia en las coordenadas del <strong>realismo cognitivo</strong>.</p>`},
-
-  contacto:{color:'#22d3ee',category:'Proxy',title:'Contacto con el Autor',
+<p>Lleva cuatro años dedicándose a bases biológicas de la conciencia y teoría de la mente, intentando desarrollar filosofía de la conciencia en las coordenadas del <strong>realismo cognitivo</strong>.</p>`
+  },
+  contacto: {
+    color:'#67e8f9', category:'Proxy', title:'Contacto con el Autor',
     html:`<p>Puedes contactar directamente con el autor por correo electrónico.</p>
-<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">✉ eljuegodelaberinto@gmail.com</a>`},
-
-  linktree:{color:'#22d3ee',category:'Proxy',title:'Linktree',
+<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">&#9993; eljuegodelaberinto@gmail.com</a>`
+  },
+  linktree: {
+    color:'#67e8f9', category:'Proxy', title:'Linktree',
     html:`<p>Todos los enlaces del canal y del autor reunidos en un solo lugar.</p>
-<a class="lbtn" href="https://linktr.ee/inside_proxy" target="_blank">🔗 linktr.ee/inside_proxy</a>`},
-
-  libros:{color:'#22d3ee',category:'Proxy',title:'Libros',
-    html:`<p>Obras escritas por Proxy. Explora los nodos conectados para acceder a cada título.</p>`},
-
-  polaris:{color:'#22d3ee',category:'Proxy',title:'Polaris',
+<a class="lbtn" href="https://linktr.ee/inside_proxy" target="_blank">&#128279; linktr.ee/inside_proxy</a>`
+  },
+  libros: {
+    color:'#67e8f9', category:'Proxy', title:'Libros',
+    html:`<p>Obras escritas por Proxy. Explora los nodos conectados para acceder a cada título.</p>`
+  },
+  polaris: {
+    color:'#67e8f9', category:'Proxy', title:'Polaris',
     html:`<p>Obra de Proxy sobre la reconstrucción arquetípica de lo masculino y lo femenino.</p>
-<a class="lbtn" href="https://www.amazon.es/Polaris-reconstrucci%C3%B3n-arquet%C3%ADpica-masculino-femenino/dp/B0D123D2RG" target="_blank">📖 Ver en Amazon</a>`},
-
-  arcana:{color:'#22d3ee',category:'Proxy',title:'Arcana',
-    html:`<span class="badge">Próximamente</span>
-<p>El siguiente libro de Proxy está en preparación. Pendiente de publicación.</p>`},
-
-  grimorio:{color:'#22d3ee',category:'Proxy',title:'Grimorio del Laberinto',
-    html:`<span class="badge">Próximamente</span>
-<p>Próxima obra de Proxy. Pendiente de publicación.</p>`},
-
-  ayudar:{color:'#22d3ee',category:'Proxy',title:'Cómo Ayudar',
-    html:`<p>Puedes ayudar al canal aportando <strong>información o trabajo</strong> sobre los proyectos de investigación, o colaborar económicamente:</p>
-<a class="lbtn" href="https://www.paypal.com/paypalme/my/profile" target="_blank">💶 PayPal</a>
-<a class="lbtn" href="https://www.patreon.com/inside_proxy" target="_blank">♥ Patreon — inside_proxy</a>
+<a class="lbtn" href="https://www.amazon.es/Polaris-reconstrucci%C3%B3n-arquet%C3%ADpica-masculino-femenino/dp/B0D123D2RG" target="_blank">&#128214; Ver en Amazon</a>`
+  },
+  arcana: {
+    color:'#67e8f9', category:'Proxy', title:'Arcana',
+    html:`<span class="badge">Próximamente</span><p>El siguiente libro de Proxy está en preparación. Pendiente de publicación.</p>`
+  },
+  grimorio: {
+    color:'#67e8f9', category:'Proxy', title:'Grimorio del Laberinto',
+    html:`<span class="badge">Próximamente</span><p>Próxima obra de Proxy. Pendiente de publicación.</p>`
+  },
+  ayudar: {
+    color:'#67e8f9', category:'Proxy', title:'Cómo Ayudar',
+    html:`<p>Puedes ayudar al canal aportando <strong>información o trabajo</strong> sobre los proyectos de investigación, colaborar económicamente por transferencia de <a class="lbtn" href="https://www.paypal.com/paypalme/my/profile" target="_blank">&#128176; PayPal</a></p>
+<p>O apoyar de forma recurrente en Patreon:</p>
+<a class="lbtn" href="https://www.patreon.com/inside_proxy" target="_blank">&#9829; Patreon — inside_proxy</a>
 <div class="hr"></div>
-<p>Proxy necesita un <strong>director de tesis en Barcelona</strong>, fondos para poder estudiar, y contactos donde hablar de su tema.</p>
-<p>También puedes recomendar o regalar sus <strong>libros</strong>, o su <strong>merchandising</strong>.</p>`},
-
-  proyectos:{color:'#fb923c',category:'Proyectos',title:'Proyectos',
-    html:`<p>Iniciativas activas del canal Proxy: investigación, tecnología e inteligencia artificial al servicio de la filosofía de la mente.</p>`},
-
-  ariadna:{color:'#fb923c',category:'Proyectos',title:'Proyecto Ariadna',
+<p>Proxy necesita un <strong>director de tesis en Barcelona</strong>, fondos para poder estudiar, y contactos donde poder ir a hablar de su tema.</p>
+<p>Si conoces <strong>podcasters o lugares</strong> donde recomendar su trabajo o sus conferencias, puede ayudar mucho al canal.</p>
+<p>También puedes recomendar o regalar sus <span class="bc" style="color:#67e8f9;cursor:pointer;text-decoration:underline" onclick="navigate('libros',true)">libros</span>, o su <strong>Merchandising</strong>.</p>`
+  },
+  proyectos: {
+    color:'#fbbf24', category:'Proyectos', title:'Proyectos',
+    html:`<p>Iniciativas activas del canal Proxy: investigación, tecnología e inteligencia artificial al servicio de la filosofía de la mente.</p>`
+  },
+  ariadna: {
+    color:'#fbbf24', category:'Proyectos', title:'Proyecto Ariadna',
     html:`<p><strong>Ariadna</strong> es una iniciativa dedicada a convertir los estudios del autor en material publicable.</p>
+<p>Puedes ayudar a Proxy a doctorarse aportando al Patreon o participando en la construcción de artículos publicables.</p>
 <div class="hr"></div>
 <p><strong>Tema del doctorado:</strong><br><em>"Bases neurobiológicas de la conciencia: Reclasificación teleosemántica de funciones cognitivas."</em></p>
 <p>La disciplina está basada en la <strong>teleosemántica de Millikan et al.</strong> Si tienes contactos, puedes referenciar el canal o a su autor.</p>
-<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">✉ Contactar al Autor</a>`},
-
-  teseo:{color:'#fb923c',category:'Proyectos',title:'Proyecto Teseo',
+<a class="lbtn" href="mailto:eljuegodelaberinto@gmail.com">&#9993; Contactar al Autor</a>`
+  },
+  teseo: {
+    color:'#fbbf24', category:'Proyectos', title:'Proyecto Teseo',
     html:`<p><strong>Teseo</strong> es una aplicación remota de NotebookLM donde todos los directos forman parte del repositorio de una IA simple.</p>
-<p>Permite al usuario hacer preguntas sobre cómo piensa Proxy acerca de ciertos temas.</p>
+<p>Permite al usuario hacer preguntas sobre cómo piensa Proxy acerca de ciertos temas, o consultar definiciones de conceptos para introducirse en la semántica cognitiva del canal.</p>
 <div class="hr"></div>
 <p>Se actualiza constantemente con todos los contenidos, incluidos los libros escritos por Proxy.</p>
-<a class="lbtn" href="https://is.gd/labyrinth_searcher" target="_blank">🔍 Abrir Proyecto Teseo</a>`},
-
-  pandora:{color:'#fb923c',category:'Proyectos',title:'Proyecto Pandora',
+<p>Puedes colaborar <strong>preguntando y testeando el NotebookLM</strong>.</p>
+<a class="lbtn" href="https://is.gd/labyrinth_searcher" target="_blank">&#128269; Abrir Proyecto Teseo</a>`
+  },
+  pandora: {
+    color:'#fbbf24', category:'Proyectos', title:'Proyecto Pandora',
     html:`<p><strong>Pandora</strong> es el proyecto de diseño y construcción de una máquina de neurofeedback portátil con procesadores pequeños.</p>
-<p>Las <strong>entradas</strong> son constantes vitales: ritmo cardíaco, tensión de la piel, movimiento corporal. Las <strong>salidas</strong> son luces, vibraciones y sonidos para acompañar los patrones de sueño.</p>
+<p>Las <strong>entradas</strong> son constantes vitales: ritmo cardíaco, tensión de la piel, movimiento corporal, etc. Las <strong>salidas</strong> son luces, vibraciones y sonidos para acompañar y aprender de los patrones de sueño del usuario.</p>
 <div class="hr"></div>
 <p>Objetivos:</p>
 <ul>
-  <li>Ayudar a tener <strong>sueños lúcidos</strong></li>
-  <li>Acceder a patrones de <strong>trance sómnico</strong></li>
+<li>Ayudar a tener <strong>sueños lúcidos</strong> con distintas técnicas</li>
+<li>Acceder a patrones de <strong>trance sómnico</strong> mediante la provocación de saltos de vigilia durante el adormecimiento</li>
 </ul>
+<p>La máquina combina <strong>condicionamiento y umbrales somáticos</strong>.</p>
 <div class="hr"></div>
 <p><strong>Arquitectura:</strong></p>
-<pre>Electrodos → ADS1299 → ESP32/Teensy → Raspberry Pi
-           ↓ SPI          ↓ USB           ↓ Python
+<pre style="font-family:monospace;font-size:13px;color:rgba(255,255,255,0.6);line-height:1.8">Electrodos
+   ↓
+ADS1299
+   ↓ SPI
+ESP32 o Teensy
+   ↓ USB
+Raspberry Pi
+   ↓
+Python (BrainFlow + NumPy)
 
 Accelerometer (I2C)
-Heart sensor  (I2C)
-EDA sensor    (ADC)
-      ↓ ESP32 ↓ WiFi/BLE → Raspberry/PC</pre>
-<span class="badge">En proceso</span>`},
-
-  'pandora-hw':{color:'#fb923c',category:'Proyectos',title:'Hardware — Pandora',
-    html:`<img src="img/neuron.png"><p>Componentes hardware del proyecto Pandora: sensores, microcontroladores y periféricos de salida.</p>`},
-
-  'pandora-esq':{color:'#fb923c',category:'Proyectos',title:'Esquema — Pandora',
-    html:`<img src="img/stars.png"><p>Diagrama de arquitectura y conexiones del sistema: cadena de señal, protocolos (I2C, SPI, USB, WiFi/BLE) y flujo de datos.</p>`},
-
-  'pandora-proto':{color:'#fb923c',category:'Proyectos',title:'Prototipo — Pandora',
-    html:`<img src="img/alchemy.png"><p>Estado actual del prototipo físico de la máquina de neurofeedback portátil.</p>`},
-
-  galatea:{color:'#fb923c',category:'Proyectos',title:'Proyecto Galatea',
-    html:`<p><strong>Galatea</strong> es el proyecto más ambicioso de Proxy. <em>Gala</em> es un pequeño organismo artificial que se comporta conforme a la estructura de la mente de un organismo humano.</p>
+Heart sensor (I2C)
+EDA sensor (ADC)
+        ↓
+      ESP32
+        ↓
+     WiFi / BLE
+        ↓
+   Raspberry / PC</pre>
+<div class="hr"></div>
+<span class="badge">En proceso</span>
+<p>Selección de entradas y sensores · Arquitectura de controlador · Arquitectura de procesador en máquina · Repositorio GitHub.</p>`
+  },
+  'pandora-hw': {
+    color:'#fbbf24', category:'Proyectos', title:'Hardware — Pandora',
+    html:`<img src="img/neuron.png"><p>Componentes hardware del proyecto Pandora: sensores, microcontroladores y periféricos de salida.</p><p><em>Reemplazar con fotografía real del hardware.</em></p>`
+  },
+  'pandora-esq': {
+    color:'#fbbf24', category:'Proyectos', title:'Esquema — Pandora',
+    html:`<img src="img/stars.png"><p>Diagrama de arquitectura y conexiones del sistema: cadena de señal, protocolos (I2C, SPI, USB, WiFi/BLE) y flujo de datos.</p><p><em>Reemplazar con esquema real del sistema.</em></p>`
+  },
+  'pandora-proto': {
+    color:'#fbbf24', category:'Proyectos', title:'Prototipo — Pandora',
+    html:`<img src="img/alchemy.png"><p>Estado actual del prototipo físico de la máquina de neurofeedback portátil.</p><p><em>Reemplazar con fotografía del prototipo real.</em></p>`
+  },
+  galatea: {
+    color:'#fbbf24', category:'Proyectos', title:'Proyecto Galatea',
+    html:`<p><strong>Galatea</strong> es el proyecto más ambicioso de Proxy. <em>Gala</em> es un pequeño organismo artificial programado en un entorno virtual que se comporta conforme a la estructura de la mente de un organismo humano.</p>
+<p>Una mente artificial programada para aprender como si fuera un organismo vivo, presentando la misma estructura mental que un humano.</p>
 <div class="hr"></div>
 <p>Galatea pretende ser la respuesta inversa al paradigma de <strong>"la habitación china"</strong>: una IA será una inteligencia cuando sea indistinguible de la inteligencia humana.</p>
-<p>Diseño de <em>Gala</em>, una <a href="https://es.wikipedia.org/wiki/Hydra_(animal)" target="_blank">Hidra</a> con sistemas representacionales de arquitectura cognitiva protohumana.</p>`},
-
-  contenidos:{color:'#4ade80',category:'Contenidos',title:'Contenidos del Canal',
-    html:`<p>El canal produce contenido en YouTube y Twitch estructurado en tres grandes temáticas: <strong>Poética</strong>, <strong>Ciencia</strong> y <strong>Filosofía</strong>.</p>`},
-
-  tematicas:{color:'#4ade80',category:'Contenidos',title:'Temáticas',
-    html:`<p>El contenido se organiza en tres áreas temáticas, cada una abordada desde las coordenadas del <strong>Realismo Cognitivo</strong> de Proxy.</p>`},
-
-  poetica:{color:'#4ade80',category:'Contenidos',title:'Poética',
+<p>Galatea es el diseño de Gala, una <a href="https://es.wikipedia.org/wiki/Hydra_(animal)" target="_blank">Hidra</a> con sistemas representacionales de arquitectura cognitiva protohumana.</p>`
+  },
+  contenidos: {
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Contenidos del Canal',
+    html:`<p>El canal produce contenido en YouTube y Twitch estructurado en tres grandes temáticas: <strong>Poética</strong>, <strong>Ciencia</strong> y <strong>Filosofía</strong>.</p>`
+  },
+  tematicas: {
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Temáticas',
+    html:`<p>El contenido se organiza en tres áreas temáticas, cada una abordada desde las coordenadas del <strong>Realismo Cognitivo</strong> de Proxy.</p>`
+  },
+  poetica: {
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Poética',
     html:`<p>En el canal se analiza la <strong>fantasía y la mitología</strong> con un enfoque psicoanalítico para transmitir y experimentar la <strong>semiótica</strong>: la disciplina filosófica que estudia qué es el significado.</p>
+<p>El símbolo es imprescindible en fantasía, y es a través de la semiótica como Proxy ha desarrollado conceptos como idea, arquetipo, representación y mente.</p>
 <div class="hr"></div>
-<p>El símbolo es imprescindible en fantasía. También se habla de <strong>Magia</strong> y de estructuras que manifiestan cómo piensa la mente.</p>`},
-
-  ciencia:{color:'#4ade80',category:'Contenidos',title:'Ciencia',
-    html:`<p>En YouTube y Twitch se realizan directos <strong>"magistrales"</strong> desarrollando conceptos de ciencia psicológica y biológica con la visión de Proxy.</p>
+<p>Aunque el Realismo Cognitivo se opone al psicoanálisis como descriptor válido de la mente, sí es un vehículo válido de <strong>autoforía</strong>: estructuras que manifiestan cómo piensa la mente. También se habla de <strong>Magia</strong>.</p>`
+  },
+  ciencia: {
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Ciencia',
+    html:`<p>En YouTube y Twitch se realizan directos <strong>"magistrales"</strong> desarrollando conceptos de ciencia psicológica y biológica con la visión de Proxy y la mayor objetividad posible.</p>
 <p>Algunos temas tratados:</p>
 <ul>
   <li>Concepto de "enfermedad mental"</li>
@@ -378,405 +603,764 @@ EDA sensor    (ADC)
   <li>Mecánica de los sueños</li>
   <li>Experimentos famosos</li>
   <li>Filosofía de la Magia</li>
-</ul>`},
-
-  filosofia:{color:'#4ade80',category:'Contenidos',title:'Filosofía',
+</ul>`
+  },
+  filosofia: {
+    color:'#6ee7b7', category:'Contenidos del Canal', title:'Filosofía',
     html:`<p>Proxy desarrolla sobre la pizarra los conceptos más importantes desde las coordenadas del <strong>Realismo Cognitivo</strong> y su <em>teoría de la representación</em>.</p>
 <p>Se habla de <strong>matemáticas y biología</strong> en un nivel algo más avanzado que los canales de divulgación típicos de internet.</p>
-<p>También se abordan los <strong>fundamentos psicológicos de la Magia</strong>.</p>`},
+<p>También se abordan los <strong>fundamentos psicológicos de la Magia</strong>.</p>`
+  },
 };
 
 // ════════════════════════════════════════════════════════
-//  CYTOSCAPE — estilos visuales
+//  COLOR HELPERS
 // ════════════════════════════════════════════════════════
+
+const CAT_COLORS = {
+  root: '#a78bfa',
+  proxy: '#67e8f9',
+  proyectos: '#fbbf24',
+  contenidos: '#6ee7b7',
+};
+
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ════════════════════════════════════════════════════════
+//  CYTOSCAPE INIT
+// ════════════════════════════════════════════════════════
+
 const cy = cytoscape({
   container: document.getElementById('cy'),
   elements: [],
   style: [
-    { selector:'node', style:{
-      'label':'data(label)', 'text-wrap':'wrap', 'text-max-width':'62px',
-      'text-valign':'center', 'text-halign':'center',
-      'font-family':'"JetBrains Mono",monospace',
-      'font-size':'8px', 'font-weight':'500',
-      'color':'rgba(191,208,224,.92)', 'text-outline-width':2,
-      'width':60,'height':60,'shape':'rectangle',
-      'border-width':1, 'cursor':'pointer', 'background-opacity':.75, 'z-index':10,
-    }},
-    { selector:'node[category="root"]', style:{
-      'background-fill':'radial-gradient',
-      'background-gradient-stop-colors':'#3d1280 #7c3aed #a855f7',
-      'background-gradient-stop-positions':'0% 65% 100%',
-      'text-outline-color':'#1a0840',
-      'shadow-blur':22,'shadow-color':'#a855f7','shadow-opacity':.55,
-      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(168,85,247,.5)',
-    }},
-    { selector:'node[category="proxy"]', style:{
-      'background-fill':'radial-gradient',
-      'background-gradient-stop-colors':'#062232 #0b7fa8 #22d3ee',
-      'background-gradient-stop-positions':'0% 65% 100%',
-      'text-outline-color':'#031420',
-      'shadow-blur':22,'shadow-color':'#22d3ee','shadow-opacity':.55,
-      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(34,211,238,.45)',
-    }},
-    { selector:'node[category="proyectos"]', style:{
-      'background-fill':'radial-gradient',
-      'background-gradient-stop-colors':'#2a0e05 #a83808 #fb923c',
-      'background-gradient-stop-positions':'0% 65% 100%',
-      'text-outline-color':'#160600',
-      'shadow-blur':22,'shadow-color':'#fb923c','shadow-opacity':.55,
-      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(251,146,60,.45)',
-    }},
-    { selector:'node[category="contenidos"]', style:{
-      'background-fill':'radial-gradient',
-      'background-gradient-stop-colors':'#031408 #127838 #4ade80',
-      'background-gradient-stop-positions':'0% 65% 100%',
-      'text-outline-color':'#020c04',
-      'shadow-blur':22,'shadow-color':'#4ade80','shadow-opacity':.55,
-      'shadow-offset-x':0,'shadow-offset-y':0,'border-color':'rgba(74,222,128,.45)',
-    }},
-    { selector:'node[type="card"]', style:{
-      'shape':'rectangle','width':92,'height':62,
-      'background-image':'data(image)','background-fit':'cover',
-      'background-clip':'node','background-fill':'solid',
-      'background-color':'#060614','background-opacity':1,
-      'text-valign':'bottom','text-halign':'center','text-margin-y':6,
-      'text-outline-color':'rgba(0,0,0,.92)','text-outline-width':2,'font-size':'7px',
-    }},
-    // Estado: seleccionado
-    { selector:'node.sel', style:{
-      'width':74,'height':74,
-      'border-width':2.5,'border-color':'rgba(255,255,255,.75)',
-      'shadow-blur':44,'shadow-opacity':.9,'background-opacity':1,
-      'font-size':'9.5px','z-index':50,
-    }},
-    { selector:'node[type="card"].sel', style:{'width':106,'height':72,'border-width':2.5,'border-color':'rgba(255,255,255,.75)'}},
-    // Estado: vecino del seleccionado
-    { selector:'node.nbr', style:{
-      'width':60,'height':60,'background-opacity':.78,
-      'border-width':1,'border-opacity':.55,'shadow-opacity':.42,'z-index':20,
-    }},
-    { selector:'node[type="card"].nbr', style:{'width':92,'height':62}},
-    // Estado: lejano
-    { selector:'node.far', style:{
-      'width':36,'height':36,'background-opacity':.18,
-      'border-opacity':.12,'shadow-opacity':.04,
-      'color':'rgba(191,208,224,.2)','text-outline-width':1,'font-size':'6.5px','z-index':5,
-    }},
-    { selector:'node[type="card"].far', style:{'width':52,'height':36}},
-    // Aristas
-    { selector:'edge', style:{
-      'width':1,'line-color':'rgba(0,210,255,.06)',
-      'curve-style':'bezier','target-arrow-shape':'none','opacity':.5,
-    }},
-    { selector:'edge.e-on',  style:{'line-color':'rgba(0,210,255,.32)','width':1.5,'opacity':1}},
-    { selector:'edge.e-off', style:{'opacity':.07,'line-color':'rgba(0,210,255,.03)'}},
+    {
+      selector: 'node',
+      style: {
+        'label': 'data(label)',
+        'text-wrap': 'wrap',
+        'text-max-width': '72px',
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'font-family': '"Inter", system-ui, sans-serif',
+        'font-size': '10px',
+        'font-weight': '600',
+        'color': '#fff',
+        'text-outline-width': 2.5,
+        'width': 79, 'height': 79,
+        'border-width': 0,
+        'cursor': 'pointer',
+        'background-opacity': 0.55,
+        'z-index': 10,
+      }
+    },
+    {
+      selector: 'node[category="root"]',
+      style: {
+        'background-fill': 'radial-gradient',
+        'background-gradient-stop-colors': '#b4a0d8 #6b45a8 #2d1860',
+        'background-gradient-stop-positions': '0% 50% 100%',
+        'background-opacity': 0.55,
+        'text-outline-color': '#1a0a40',
+        'shadow-blur': 30,
+        'shadow-color': '#7c3aed',
+        'shadow-opacity': 0.5,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
+        'border-width': 1,
+        'border-color': 'rgba(180,160,216,0.3)',
+      }
+    },
+    {
+      selector: 'node[category="proxy"]',
+      style: {
+        'background-fill': 'radial-gradient',
+        'background-gradient-stop-colors': '#7dd8e8 #1a8a9e #0a4050',
+        'background-gradient-stop-positions': '0% 50% 100%',
+        'background-opacity': 0.55,
+        'text-outline-color': '#052830',
+        'shadow-blur': 30,
+        'shadow-color': '#0891b2',
+        'shadow-opacity': 0.5,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
+        'border-width': 1,
+        'border-color': 'rgba(125,216,232,0.25)',
+      }
+    },
+    {
+      selector: 'node[category="proyectos"]',
+      style: {
+        'background-fill': 'radial-gradient',
+        'background-gradient-stop-colors': '#d4a854 #9a6e20 #4a3010',
+        'background-gradient-stop-positions': '0% 50% 100%',
+        'background-opacity': 0.55,
+        'text-outline-color': '#2a1a05',
+        'shadow-blur': 30,
+        'shadow-color': '#b87a14',
+        'shadow-opacity': 0.5,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
+        'border-width': 1,
+        'border-color': 'rgba(212,168,84,0.25)',
+      }
+    },
+    {
+      selector: 'node[category="contenidos"]',
+      style: {
+        'background-fill': 'radial-gradient',
+        'background-gradient-stop-colors': '#70c8a0 #28805a #103828',
+        'background-gradient-stop-positions': '0% 50% 100%',
+        'background-opacity': 0.55,
+        'text-outline-color': '#082018',
+        'shadow-blur': 30,
+        'shadow-color': '#059669',
+        'shadow-opacity': 0.5,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
+        'border-width': 1,
+        'border-color': 'rgba(112,200,160,0.25)',
+      }
+    },
+    {
+      selector: 'node[type="card"]',
+      style: {
+        'shape': 'roundrectangle',
+        'width': 130,
+        'height': 90,
+        'background-image': 'data(image)',
+        'background-fit': 'cover',
+        'background-clip': 'node',
+        'background-fill': 'solid',
+        'background-color': '#12122a',
+        'background-opacity': 1,
+        'label': 'data(label)',
+        'text-valign': 'bottom',
+        'text-halign': 'center',
+        'text-margin-y': 8,
+        'text-outline-color': 'rgba(0,0,0,0.9)',
+        'text-outline-width': 2,
+        'font-size': '9px',
+        'color': '#fff',
+        'border-width': 1,
+        'border-color': 'rgba(212,168,84,0.4)',
+        'shadow-blur': 20,
+        'shadow-color': '#b87a14',
+        'shadow-opacity': 0.3,
+        'shadow-offset-x': 0,
+        'shadow-offset-y': 0,
+      }
+    },
+    {
+      selector: 'node[type="card"].r-child',
+      style: { 'width': 130, 'height': 90 }
+    },
+    {
+      selector: 'node[type="card"].leaf-sel',
+      style: {
+        'border-width': 2.5,
+        'border-color': 'rgba(255,255,255,0.7)',
+        'shadow-blur': 28,
+        'shadow-opacity': 0.6,
+      }
+    },
+    {
+      selector: 'node.r-current',
+      style: {
+        'width': 97,
+        'height': 97,
+        'font-size': '12px',
+        'border-width': 3,
+        'border-color': 'rgba(255,255,255,0.35)',
+        'shadow-blur': 35,
+        'shadow-opacity': 0.6,
+      }
+    },
+    {
+      selector: 'node.r-parent',
+      style: {
+        'width': 58,
+        'height': 58,
+        'font-size': '8.5px',
+        'background-opacity': 0.35,
+        'color': 'rgba(255,255,255,0.5)',
+        'text-outline-color': 'rgba(0,0,0,0.6)',
+        'shadow-opacity': 0.15,
+      }
+    },
+    {
+      selector: 'node.r-child',
+      style: { 'width': 79, 'height': 79 }
+    },
+    {
+      selector: 'node.leaf-sel',
+      style: {
+        'border-width': 3,
+        'border-color': 'rgba(255,255,255,0.5)',
+        'shadow-blur': 30,
+        'shadow-opacity': 0.55,
+      }
+    },
+    {
+      selector: 'edge',
+      style: {
+        'width': 1.5,
+        'line-color': 'rgba(255,255,255,0.08)',
+        'curve-style': 'bezier',
+        'target-arrow-shape': 'none',
+      }
+    },
+    {
+      selector: 'edge.e-up',
+      style: {
+        'line-style': 'dashed',
+        'line-dash-pattern': [6, 6],
+        'line-color': 'rgba(255,255,255,0.05)',
+        'width': 1,
+      }
+    },
+    {
+      selector: 'edge.e-down',
+      style: {
+        'line-color': 'rgba(255,255,255,0.12)',
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': 'rgba(255,255,255,0.12)',
+        'width': 1.5,
+      }
+    },
   ],
-  userZoomingEnabled:true,
-  userPanningEnabled:true,
-  wheelSensitivity:.16,
-  minZoom:.08, maxZoom:5,
-  autoungrabify:true,   // nodos flotantes, no arrastrables
+  userZoomingEnabled: true,
+  userPanningEnabled: true,
+  wheelSensitivity: 0.2,
+  minZoom: 0.25,
+  maxZoom: 4,
 });
 
 // ════════════════════════════════════════════════════════
-//  LAYOUT DE ÁRBOL (más vertical que horizontal)
+//  STATE
 // ════════════════════════════════════════════════════════
-function computeLayout(){
-  const HGAP=62, VGAP=148;
-  const lv={};
-  function countLeaves(id){
-    const k=CHILDREN[id]||[];
-    if(!k.length){lv[id]=1;return 1;}
-    let s=0;k.forEach(c=>s+=countLeaves(c));lv[id]=s;return s;
+
+let currentId = null;
+let busy = false;
+
+// ════════════════════════════════════════════════════════
+//  POSITIONS
+// ════════════════════════════════════════════════════════
+
+function positions(parentId, nodeId, childIds) {
+  const n = childIds.length;
+  const VSTEP = 150;
+  const HSTEP = 158;
+  const pos = {};
+
+  const hasParent = !!parentId;
+  const currentY = hasParent ? -60 : (n > 0 ? -90 : 0);
+  const parentY  = currentY - VSTEP;
+  const childY   = currentY + VSTEP;
+
+  if (hasParent) pos[parentId] = { x: 0, y: parentY };
+  pos[nodeId] = { x: 0, y: currentY };
+
+  if (n > 0) {
+    const totalW = (n - 1) * HSTEP;
+    childIds.forEach((id, i) => {
+      pos[id] = { x: -totalW / 2 + i * HSTEP, y: childY };
+    });
   }
-  countLeaves('canal');
-  const pos={};
-  function assign(id,depth,xStart){
-    const k=CHILDREN[id]||[];
-    const span=(lv[id]||1)*HGAP;
-    pos[id]={x:xStart+span/2,y:depth*VGAP};
-    let cur=xStart;
-    k.forEach(c=>{assign(c,depth+1,cur);cur+=(lv[c]||1)*HGAP;});
-  }
-  assign('canal',0,0);
-  Object.keys(NODES).forEach(id=>{if(!pos[id])pos[id]={x:0,y:700};});
+
   return pos;
 }
 
 // ════════════════════════════════════════════════════════
-//  CONSTRUIR EL GRAFO COMPLETO
+//  RESOLVE CATEGORY for background
 // ════════════════════════════════════════════════════════
-let basePos={};   // posiciones base para la animación
-let selId=null;
 
-function buildGraph(){
-  stopAnim();
-  cy.elements().remove();
-  basePos = computeLayout();
+function resolveCategory(nodeId) {
+  const cat = NODES[nodeId].category;
+  return cat;
+}
 
-  Object.values(NODES).forEach(n=>{
-    const p=basePos[n.id]||{x:0,y:0};
+// ════════════════════════════════════════════════════════
+//  NAVIGATE
+// ════════════════════════════════════════════════════════
+
+async function navigate(nodeId, showPanel = true) {
+  if (busy) return;
+  if (nodeId === currentId) {
+    if (showPanel) openPanel(nodeId);
+    return;
+  }
+
+  busy = true;
+
+  const parentId = PARENT[nodeId];
+  const childIds = CHILDREN[nodeId] || [];
+  const pos      = positions(parentId, nodeId, childIds);
+
+  // Switch background based on category
+  switchBackground(resolveCategory(nodeId));
+
+  // 1 — stop ambient + fade out
+  stopAmbient();
+  const cur = cy.elements();
+  if (cur.length > 0) {
+    cur.stop();
+    await new Promise(r => cur.animate({ style:{ opacity:0 } }, { duration:180, complete:r }));
+    cur.remove();
+  }
+
+  // 2 — add nodes
+  const allIds = [nodeId, ...childIds, ...(parentId ? [parentId] : [])];
+  allIds.forEach(id => {
+    const roleClass = id === nodeId ? 'r-current' : id === parentId ? 'r-parent' : 'r-child';
+    const n = NODES[id];
     cy.add({
-      group:'nodes',
-      data:{id:n.id,label:n.label,category:n.category,type:n.type||'',image:n.image||'none'},
-      position:{x:p.x,y:p.y},
+      group: 'nodes',
+      data: { id: n.id, label: n.label, category: n.category, type: n.type || '', image: n.image || 'none' },
+      classes: roleClass,
+      position: pos[id],
+      style: { opacity: 0 },
     });
   });
 
-  let ei=0;
-  Object.entries(CHILDREN).forEach(([pid,kids])=>{
-    kids.forEach(cid=>{
-      if(NODES[pid]&&NODES[cid])
-        cy.add({group:'edges',data:{id:'e'+(ei++),source:pid,target:cid}});
-    });
+  // 3 — add edges
+  if (parentId) {
+    cy.add({ group:'edges', data:{ id:'e-up', source:parentId, target:nodeId }, classes:'e-up', style:{ opacity:0 } });
+  }
+  childIds.forEach((cid, i) => {
+    cy.add({ group:'edges', data:{ id:`e-d${i}`, source:nodeId, target:cid }, classes:'e-down', style:{ opacity:0 } });
   });
 
-  cy.fit(cy.elements(),60);
-  cy.nodes().ungrabify(); // garantizar que no son arrastrables
-  applySelection(selId||'canal');
-  startAnim();
+  // 4 — fit
+  cy.fit(cy.elements(), 90);
+
+  // 5 — fade in
+  const DUR = 420;
+  const anims = [
+    new Promise(r => cy.nodes('.r-current').animate({ style:{ opacity:1 } }, { duration:DUR, complete:r })),
+  ];
+  const ch = cy.nodes('.r-child');
+  const de = cy.edges('.e-down');
+  if (ch.length) anims.push(new Promise(r => ch.animate({ style:{ opacity:1 } }, { duration:DUR, complete:r })));
+  if (de.length) anims.push(new Promise(r => de.animate({ style:{ opacity:0.75 } }, { duration:DUR, complete:r })));
+  if (parentId) {
+    anims.push(new Promise(r => cy.nodes('.r-parent').animate({ style:{ opacity:0.42 } }, { duration:DUR, complete:r })));
+    anims.push(new Promise(r => cy.edges('.e-up'   ).animate({ style:{ opacity:0.22 } }, { duration:DUR, complete:r })));
+  }
+  await Promise.all(anims);
+
+  currentId = nodeId;
+  busy = false;
+
+  startAmbient();
+  updateTopBar(nodeId);
+  updateSephiroth(nodeId);
+  if (showPanel) openPanel(nodeId);
+}
+
+function goBack() {
+  const p = PARENT[currentId];
+  if (p !== null && p !== undefined) navigate(p, true);
 }
 
 // ════════════════════════════════════════════════════════
-//  SELECCIONAR NODO — resaltar vecindad, abrir panel
+//  TOP BAR
 // ════════════════════════════════════════════════════════
-function applySelection(id, openPan){
-  if(!NODES[id]) return;
-  selId=id;
-  const nbrs=new Set([...(CHILDREN[id]||[]),...(PARENT[id]!=null?[PARENT[id]]:[] )]);
 
-  // Limpiar estilos inline previos del glow antes de cambiar clases
-  cy.nodes().removeStyle('shadow-blur shadow-opacity border-opacity border-width');
-
-  cy.nodes().forEach(node=>{
-    node.removeClass('sel nbr far');
-    const nid=node.id();
-    if(nid===id)          node.addClass('sel');
-    else if(nbrs.has(nid))node.addClass('nbr');
-    else                  node.addClass('far');
-  });
-  cy.edges().forEach(edge=>{
-    edge.removeClass('e-on e-off');
-    const s=edge.source().id(),t=edge.target().id();
-    if(s===id||t===id)edge.addClass('e-on');
-    else              edge.addClass('e-off');
-  });
-
-  updateBreadcrumb(id);
-  updateSephiroth(id);
-  switchBg(NODES[id].category);
-  if(openPan!==false) openPanel(id);
-}
-
-// ════════════════════════════════════════════════════════
-//  PANEL LATERAL
-// ════════════════════════════════════════════════════════
-function openPanel(id){
-  const d=CONTENT[id];
-  if(!d) return;
-  document.getElementById('p-cat').innerHTML='<span style="color:'+d.color+'">'+d.category+'</span>';
-  document.getElementById('p-title').textContent=d.title;
-  document.getElementById('p-body').innerHTML=d.html;
-  document.getElementById('panel').classList.add('open');
-}
-function closePanel(){
-  document.getElementById('panel').classList.remove('open');
-}
-
-// ════════════════════════════════════════════════════════
-//  BREADCRUMB
-// ════════════════════════════════════════════════════════
-function pathTo(id){
-  const p=[];let c=id;
-  while(c!=null){p.unshift(c);c=PARENT[c];}
+function pathTo(nodeId) {
+  const p = [];
+  let c = nodeId;
+  while (c !== null && c !== undefined) { p.unshift(c); c = PARENT[c]; }
   return p;
 }
-function updateBreadcrumb(id){
-  const path=pathTo(id);
-  document.getElementById('breadcrumb').innerHTML=path.map((nid,i)=>{
-    const lbl=NODES[nid].label.replace('\n',' ');
-    const sep=i>0?'<span class="bc-sep"> / </span>':'';
-    if(i===path.length-1) return sep+'<span class="bc cur">'+lbl+'</span>';
-    return sep+'<span class="bc" onclick="applySelection(\''+nid+'\',true)">'+lbl+'</span>';
+
+function updateTopBar(nodeId) {
+  const path = pathTo(nodeId);
+  const isRoot = PARENT[nodeId] === null;
+
+  const btn = document.getElementById('btn-back');
+  if (isRoot) {
+    btn.classList.remove('vis');
+  } else {
+    const pLabel = NODES[PARENT[nodeId]].label.replace('\n', ' ');
+    btn.innerHTML = '&larr; ' + pLabel;
+    btn.classList.add('vis');
+  }
+
+  document.getElementById('breadcrumb').innerHTML = path.map((id, i) => {
+    const lbl = NODES[id].label.replace('\n', ' ');
+    const sep = i > 0 ? '<span class="bc-sep">&#8250;</span>' : '';
+    if (i === path.length - 1) return sep + '<span class="bc cur">' + lbl + '</span>';
+    return sep + '<span class="bc" onclick="navigate(\'' + id + '\',true)">' + lbl + '</span>';
   }).join('');
+
+  const hasKids = CHILDREN[nodeId] && CHILDREN[nodeId].length > 0;
+  document.getElementById('topbar-hint').textContent = hasKids
+    ? 'Clic en nodo hijo para expandir'
+    : 'Sin subnodos — clic en \u2190 para volver';
 }
 
 // ════════════════════════════════════════════════════════
-//  EVENTOS DE CLICK
-//  Pausamos la animación en mousedown para que el nodo
-//  esté quieto cuando Cytoscape detecta el tap.
+//  PANEL
 // ════════════════════════════════════════════════════════
-document.getElementById('cy').addEventListener('mousedown', ()=> stopAnim());
-document.addEventListener('mouseup', ()=> setTimeout(startAnim, 40));
 
-cy.on('tap','node', evt=> applySelection(evt.target.id(), true));
-cy.on('tap', evt=>{ if(evt.target===cy) closePanel(); });
+function openPanel(nodeId) {
+  const d = CONTENT[nodeId];
+  if (!d) return;
+  document.getElementById('p-cat').innerHTML =
+    '<span style="color:' + d.color + '">' + d.category + '</span>';
+  document.getElementById('p-title').textContent = d.title;
+  document.getElementById('p-body').innerHTML = d.html;
+  document.getElementById('panel').classList.add('open');
+}
 
-// Cursor pointer sobre nodos
-cy.on('mouseover','node',()=>document.body.style.cursor='pointer');
-cy.on('mouseout', 'node',()=>document.body.style.cursor='default');
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  cy.nodes().removeClass('leaf-sel');
+}
 
-// Hover glow
-cy.on('mouseover','node',evt=>{
-  if(!evt.target.hasClass('sel'))
-    evt.target.style({'border-width':2,'border-opacity':.8,'shadow-blur':32,'shadow-opacity':.65});
+// ════════════════════════════════════════════════════════
+//  EVENTS
+// ════════════════════════════════════════════════════════
+
+cy.on('tap', 'node', evt => {
+  const id = evt.target.id();
+  const hasKids = CHILDREN[id] && CHILDREN[id].length > 0;
+
+  if (hasKids) {
+    navigate(id, true);
+  } else {
+    cy.nodes().removeClass('leaf-sel');
+    evt.target.addClass('leaf-sel');
+    updateSephiroth(id);
+    openPanel(id);
+  }
 });
-cy.on('mouseout','node',evt=>{
-  if(!evt.target.hasClass('sel'))
-    evt.target.style({'border-width':1,'border-opacity':evt.target.hasClass('far')?.12:.45,'shadow-blur':22});
+
+cy.on('tap', evt => {
+  if (evt.target === cy) closePanel();
 });
 
+cy.on('mouseover', 'node', () => document.body.style.cursor = 'pointer');
+cy.on('mouseout',  'node', () => document.body.style.cursor = 'default');
+
 // ════════════════════════════════════════════════════════
-//  ANIMACIÓN ALGA — los nodos flotan y vuelven solos
+//  AMBIENT ANIMATIONS
 // ════════════════════════════════════════════════════════
-let animFrame=null, animStart=null, animRunning=false;
 
-function animLoop(ts){
-  if(!animRunning) return;
-  if(!animStart) animStart=ts;
-  const t=(ts-animStart)/1000;
+let animFrame = null;
+let animStart = null;
+let animRunning = false;
 
-  try{
-    cy.nodes().forEach((node,i)=>{
-      if(!node.inside()) return;
-      const isSel=node.hasClass('sel');
-      const isNbr=node.hasClass('nbr');
-      const id=node.id();
-      const bp=basePos[id];
-      if(!bp) return;
+function ambientLoop(timestamp) {
+  if (!animRunning) return;
+  if (!animStart) animStart = timestamp;
+  const t = (timestamp - animStart) / 1000;
 
-      // Los nodos lejanos oscilan más, los cercanos casi quietos
-      const amp  = isSel?1.2 : isNbr?3.0 : 7.0;
-      const spd  = .4+(i%7)*.06;
-      const ph   = i*2.1+(id.charCodeAt(0)||0)*.09;
+  try {
+    // Pulse: leaf-sel takes priority, otherwise r-current
+    const leaf = cy.nodes('.leaf-sel');
+    const cur = leaf.length ? leaf : cy.nodes('.r-current');
+    if (cur.length && cur.inside()) {
+      const sin18 = Math.sin(t * 1.8);
+      const isCard = cur.data('type') === 'card';
+      const styleUpdate = {
+        'shadow-opacity': Math.round((0.4 + 0.25 * sin18) * 100) / 100,
+        'shadow-blur': Math.round(28 + 14 * sin18),
+        'border-opacity': Math.round((0.3 + 0.2 * sin18) * 100) / 100,
+      };
+      if (!isCard) {
+        const baseSize = leaf.length ? 78 : 95;
+        const range = leaf.length ? 4 : 6;
+        const size = Math.round(baseSize + range * sin18);
+        styleUpdate['width'] = size;
+        styleUpdate['height'] = size;
+      }
+      cur.style(styleUpdate);
+    }
 
-      // Posición oscila en torno a base → vuelve sola
-      node.position({
-        x: bp.x + amp*Math.sin(t*spd+ph),
-        y: bp.y + amp*.65*Math.cos(t*spd*.8+ph+1.3),
-      });
+    // Gentle float on child nodes
+    const children = cy.nodes('.r-child');
+    children.forEach((node, i) => {
+      if (!node.inside()) return;
+      const phase = i * 2.1;
+      const dx = 2.5 * Math.sin(t * 0.7 + phase);
+      const dy = 3.0 * Math.cos(t * 0.5 + phase);
+      const basePos = node.data('_basePos');
+      if (basePos) {
+        node.position({ x: basePos.x + dx, y: basePos.y + dy });
+      }
+      node.style('shadow-opacity', Math.round((0.35 + 0.15 * Math.sin(t * 1.2 + phase)) * 100) / 100);
+    });
 
-      // Glow pulsante en el nodo seleccionado (solo sombra, no tamaño)
-      if(isSel){
-        const s=Math.sin(t*1.55);
-        node.style({
-          'shadow-opacity':+(.62+.22*s).toFixed(2),
-          'shadow-blur':Math.round(36+11*s),
-          'border-opacity':+(.65+.18*s).toFixed(2),
+    // Parent node: very subtle drift
+    const parent = cy.nodes('.r-parent');
+    if (parent.length && parent.inside()) {
+      const basePos = parent.data('_basePos');
+      if (basePos) {
+        parent.position({
+          x: basePos.x + 1.5 * Math.sin(t * 0.4),
+          y: basePos.y + 1.5 * Math.cos(t * 0.35),
         });
       }
-    });
+    }
 
-    // Pulso en aristas activas
-    cy.edges('.e-on').forEach((edge,i)=>{
-      if(!edge.inside()) return;
-      edge.style('opacity',+(.68+.22*Math.sin(t*1.4+i)).toFixed(2));
+    // Edge glow wave
+    cy.edges('.e-down').forEach((edge, i) => {
+      if (!edge.inside()) return;
+      const op = Math.round((0.55 + 0.2 * Math.sin(t * 1.5 + i * 1.5)) * 100) / 100;
+      edge.style('opacity', op);
     });
-  }catch(e){}
+  } catch (e) {
+    // Node removed mid-frame, safe to ignore
+  }
 
-  if(animRunning) animFrame=requestAnimationFrame(animLoop);
+  if (animRunning) animFrame = requestAnimationFrame(ambientLoop);
 }
 
-function startAnim(){
-  stopAnim();
-  animStart=null; animRunning=true;
-  animFrame=requestAnimationFrame(animLoop);
+function storeBasePositions() {
+  cy.nodes().forEach(node => {
+    node.data('_basePos', { ...node.position() });
+  });
 }
-function stopAnim(){
-  animRunning=false;
-  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
+
+function startAmbient() {
+  stopAmbient();
+  storeBasePositions();
+  animStart = null;
+  animRunning = true;
+  animFrame = requestAnimationFrame(ambientLoop);
+}
+
+function stopAmbient() {
+  animRunning = false;
+  if (animFrame) {
+    cancelAnimationFrame(animFrame);
+    animFrame = null;
+  }
 }
 
 // ════════════════════════════════════════════════════════
-//  MINIMAPA SEPHIROTH
+//  HOVER EFFECTS
 // ════════════════════════════════════════════════════════
-const SEPH_COLORS={root:'#a855f7',proxy:'#22d3ee',proyectos:'#fb923c',contenidos:'#4ade80'};
-const SEPH_POS={
-  canal:    {x:80,y:16},
-  proxy:    {x:35,y:46},  proyectos:{x:80,y:52},  contenidos:{x:125,y:46},
-  autor:    {x:22,y:78},  libros:   {x:48,y:82},  ayudar:    {x:35,y:108},
-  ariadna:  {x:65,y:82},  teseo:    {x:80,y:96},  galatea:   {x:95,y:82},
-  tematicas:{x:125,y:78},
-  contacto: {x:12,y:130}, linktree: {x:32,y:135},
-  polaris:  {x:35,y:158}, arcana:   {x:52,y:164}, grimorio:  {x:18,y:164},
-  poetica:  {x:112,y:108},ciencia:  {x:138,y:108},filosofia: {x:125,y:135},
+
+let hoveredNode = null;
+
+cy.on('mouseover', 'node.r-child', evt => {
+  hoveredNode = evt.target.id();
+  evt.target.style({
+    'shadow-blur': 40,
+    'shadow-opacity': 0.75,
+    'border-width': 2.5,
+    'border-opacity': 0.6,
+  });
+});
+
+cy.on('mouseout', 'node.r-child', evt => {
+  hoveredNode = null;
+  evt.target.style({
+    'shadow-blur': 25,
+    'border-width': 1,
+    'border-opacity': 0.3,
+  });
+});
+
+cy.on('mouseover', 'node.r-parent', evt => {
+  evt.target.style({
+    'background-opacity': 0.55,
+    'color': 'rgba(255,255,255,0.8)',
+  });
+});
+
+cy.on('mouseout', 'node.r-parent', evt => {
+  evt.target.style({
+    'background-opacity': 0.35,
+    'color': 'rgba(255,255,255,0.5)',
+  });
+});
+
+// ════════════════════════════════════════════════════════
+//  SEPHIROTH MINIMAP (Tree of Life)
+// ════════════════════════════════════════════════════════
+
+const SEPH_COLORS = {
+  root: '#a78bfa',
+  proxy: '#67e8f9',
+  proyectos: '#fbbf24',
+  contenidos: '#6ee7b7',
 };
 
-function computeSephPos(){
-  const res={...SEPH_POS};
-  const queue=['canal'],seen=new Set(['canal']);
-  while(queue.length){
-    const pid=queue.shift();
-    (CHILDREN[pid]||[]).forEach(c=>{if(!seen.has(c)){seen.add(c);queue.push(c);}});
-    if(!res[pid]) continue;
-    const unpos=(CHILDREN[pid]||[]).filter(c=>!SEPH_POS[c]);
-    if(!unpos.length) continue;
-    const spread=(unpos.length-1)*14;
-    unpos.forEach((cid,i)=>{
-      if(res[cid]) return;
-      res[cid]={x:Math.max(8,Math.min(152,res[pid].x-spread/2+i*14)),y:Math.min(170,res[pid].y+20)};
+// Positions arranged as Kabbalistic Tree of Life
+// 3 pillars: Left (Severity), Center (Balance), Right (Mercy)
+const SEPH_POS = {
+  // Crown — Keter
+  canal:      { x: 80, y: 16 },
+  // Row 2 — 3 pillars
+  proxy:      { x: 35, y: 46 },
+  proyectos:  { x: 80, y: 52 },
+  contenidos: { x: 125, y: 46 },
+  // Row 3 — children spread on pillars
+  autor:      { x: 22, y: 78 },
+  libros:     { x: 48, y: 82 },
+  ayudar:     { x: 35, y: 108 },
+  ariadna:    { x: 65, y: 82 },
+  teseo:      { x: 80, y: 96 },
+  galatea:    { x: 95, y: 82 },
+  tematicas:  { x: 125, y: 78 },
+  // Row 4 — leaves
+  contacto:   { x: 12, y: 130 },
+  linktree:   { x: 32, y: 135 },
+  polaris:    { x: 35, y: 158 },
+  arcana:     { x: 52, y: 164 },
+  grimorio:   { x: 18, y: 164 },
+  poetica:    { x: 112, y: 108 },
+  ciencia:    { x: 138, y: 108 },
+  filosofia:  { x: 125, y: 135 },
+};
+
+// Auto-computes positions for nodes absent from SEPH_POS,
+// based on their parent's position and sibling index.
+// Nodes in SEPH_POS keep their manual (Kabbalistic) position.
+function computeSephPos() {
+  const result = { ...SEPH_POS };
+
+  // BFS so parents are always resolved before children
+  const queue = ['canal'];
+  const seen = new Set(['canal']);
+  while (queue.length) {
+    const pid = queue.shift();
+    (CHILDREN[pid] || []).forEach(c => {
+      if (!seen.has(c)) { seen.add(c); queue.push(c); }
+    });
+
+    if (!result[pid]) continue; // parent has no position yet — skip
+
+    const unpositioned = (CHILDREN[pid] || []).filter(c => !SEPH_POS[c]);
+    if (!unpositioned.length) continue;
+
+    const spread = (unpositioned.length - 1) * 14;
+    unpositioned.forEach((cid, i) => {
+      if (result[cid]) return; // already computed
+      result[cid] = {
+        x: Math.max(8, Math.min(152, result[pid].x - spread / 2 + i * 14)),
+        y: Math.min(170, result[pid].y + 20),
+      };
     });
   }
-  return res;
+
+  return result;
 }
 
-function buildSephiroth(){
-  const pos=computeSephPos();
-  const eg=document.getElementById('seph-edges');
-  const ng=document.getElementById('seph-nodes');
-  eg.innerHTML='';ng.innerHTML='';
-  const NS='http://www.w3.org/2000/svg';
-  Object.entries(CHILDREN).forEach(([pid,kids])=>{
-    if(!pos[pid]) return;
-    kids.forEach(cid=>{
-      if(!pos[cid]) return;
-      const l=document.createElementNS(NS,'line');
-      l.setAttribute('x1',pos[pid].x);l.setAttribute('y1',pos[pid].y);
-      l.setAttribute('x2',pos[cid].x);l.setAttribute('y2',pos[cid].y);
-      l.dataset.from=pid;l.dataset.to=cid;
-      eg.appendChild(l);
+function buildSephiroth() {
+  const pos = computeSephPos();
+  const edgesG = document.getElementById('seph-edges');
+  const nodesG = document.getElementById('seph-nodes');
+  edgesG.innerHTML = '';
+  nodesG.innerHTML = '';
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  // Draw edges
+  Object.entries(CHILDREN).forEach(([pid, kids]) => {
+    if (!pos[pid]) return;
+    const p = pos[pid];
+    kids.forEach(cid => {
+      if (!pos[cid]) return;
+      const c = pos[cid];
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', p.x);
+      line.setAttribute('y1', p.y);
+      line.setAttribute('x2', c.x);
+      line.setAttribute('y2', c.y);
+      line.dataset.from = pid;
+      line.dataset.to = cid;
+      edgesG.appendChild(line);
     });
   });
-  Object.entries(pos).forEach(([id,p])=>{
-    if(!NODES[id]) return;
-    const color=SEPH_COLORS[NODES[id].category]||'#fff';
-    const c=document.createElementNS(NS,'circle');
-    c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',6);
-    c.setAttribute('fill',color);c.setAttribute('fill-opacity',.38);
-    c.style.color=color;c.dataset.id=id;
-    c.addEventListener('click',()=>applySelection(id,true));
-    ng.appendChild(c);
-    const lbl=document.createElementNS(NS,'text');
-    lbl.setAttribute('x',p.x);lbl.setAttribute('y',p.y+12);
-    lbl.classList.add('seph-label');lbl.dataset.id=id;
-    lbl.textContent=NODES[id].label.replace('\n',' ');
-    lbl.addEventListener('click',()=>applySelection(id,true));
-    lbl.style.cursor='pointer';
-    ng.appendChild(lbl);
+
+  // Draw nodes
+  Object.entries(pos).forEach(([id, nodePos]) => {
+    if (!NODES[id]) return;
+    const cat = NODES[id].category;
+    const color = SEPH_COLORS[cat] || '#fff';
+
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', nodePos.x);
+    circle.setAttribute('cy', nodePos.y);
+    circle.setAttribute('r', 7);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('fill-opacity', 0.4);
+    circle.style.color = color;
+    circle.dataset.id = id;
+    circle.addEventListener('click', () => navigate(id, true));
+    nodesG.appendChild(circle);
+
+    // Label
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', nodePos.x);
+    label.setAttribute('y', nodePos.y + 13);
+    label.classList.add('seph-label');
+    label.dataset.id = id;
+    label.textContent = NODES[id].label.replace('\n', ' ');
+    label.addEventListener('click', () => navigate(id, true));
+    label.style.cursor = 'pointer';
+    nodesG.appendChild(label);
   });
 }
 
-function updateSephiroth(activeId){
-  const path=new Set(pathTo(activeId));
-  document.querySelectorAll('#seph-nodes circle').forEach(c=>{
-    const id=c.dataset.id;
-    if(id===activeId){c.classList.add('seph-active');c.setAttribute('fill-opacity',1);}
-    else if(path.has(id)){c.classList.remove('seph-active');c.setAttribute('fill-opacity',.65);}
-    else{c.classList.remove('seph-active');c.setAttribute('fill-opacity',.22);}
+function updateSephiroth(activeId) {
+  const path = pathTo(activeId);
+  const pathSet = new Set(path);
+
+  // Update nodes
+  document.querySelectorAll('#seph-nodes circle').forEach(c => {
+    const id = c.dataset.id;
+    if (id === activeId) {
+      c.classList.add('seph-active');
+      c.setAttribute('fill-opacity', 1);
+    } else if (pathSet.has(id)) {
+      c.classList.remove('seph-active');
+      c.setAttribute('fill-opacity', 0.7);
+    } else {
+      c.classList.remove('seph-active');
+      c.setAttribute('fill-opacity', 0.25);
+    }
   });
-  document.querySelectorAll('#seph-nodes .seph-label').forEach(l=>{
-    l.classList.toggle('label-active',l.dataset.id===activeId);
+
+  // Update labels
+  document.querySelectorAll('#seph-nodes .seph-label').forEach(l => {
+    const id = l.dataset.id;
+    if (id === activeId) {
+      l.classList.add('label-active');
+    } else {
+      l.classList.remove('label-active');
+    }
   });
-  document.querySelectorAll('#seph-edges line').forEach(l=>{
-    l.classList.toggle('path-active',path.has(l.dataset.from)&&path.has(l.dataset.to));
+
+  // Update edges
+  document.querySelectorAll('#seph-edges line').forEach(l => {
+    const from = l.dataset.from;
+    const to = l.dataset.to;
+    if (pathSet.has(from) && pathSet.has(to)) {
+      l.classList.add('path-active');
+    } else {
+      l.classList.remove('path-active');
+    }
   });
 }
 
-// ════════════════════════════════════════════════════════
-//  ARRANQUE
-// ════════════════════════════════════════════════════════
 buildSephiroth();
-buildGraph();
+
+// ════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════
+
+navigate('canal', false);
 </script>
 </body>
 </html>
