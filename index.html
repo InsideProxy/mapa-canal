@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.4.7 -->
+  <!-- v0.4.8 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -224,7 +224,7 @@
 
     /* ── LEGEND ──────────────────────────────── */
     #legend {
-      position: fixed; bottom: 290px; left: 16px;
+      position: fixed; bottom: 370px; left: 16px;
       background: rgba(5,5,16,0.6);
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 14px;
@@ -264,8 +264,8 @@
       position: fixed;
       bottom: 20px;
       left: 16px;
-      width: 240px;
-      height: 270px;
+      width: 300px;
+      height: 340px;
       z-index: 100;
       pointer-events: auto;
       opacity: 0.6;
@@ -296,15 +296,19 @@
     }
     #sephiroth .seph-label {
       font-family: 'Inter', sans-serif;
-      font-size: 10px;
-      fill: rgba(255,255,255,0.4);
+      font-size: 7px;
+      fill: rgba(255,255,255,0);
       text-anchor: middle;
       pointer-events: none;
       transition: fill 0.3s;
     }
+    #sephiroth .seph-label.label-path {
+      fill: rgba(255,255,255,0.35);
+    }
     #sephiroth .seph-label.label-active {
-      fill: rgba(255,255,255,0.9);
-      font-weight: 600;
+      fill: rgba(255,255,255,0.95);
+      font-weight: 700;
+      font-size: 8px;
     }
 
     /* ── CATEGORY TRANSITION INDICATOR ───────── */
@@ -370,7 +374,7 @@
 <div id="category-indicator"></div>
 
 <!-- Sephiroth Tree of Life Minimap -->
-<svg id="sephiroth" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+<svg id="sephiroth" viewBox="0 0 240 270" xmlns="http://www.w3.org/2000/svg">
   <!-- Paths (edges) drawn first -->
   <g id="seph-edges"></g>
   <!-- Nodes drawn on top -->
@@ -1265,28 +1269,28 @@ const SEPH_COLORS = {
 // 3 pillars: Left (Severity), Center (Balance), Right (Mercy)
 const SEPH_POS = {
   // Crown — Keter
-  canal:      { x: 80, y: 16 },
+  canal:      { x: 120, y: 24 },
   // Row 2 — 3 pillars
-  proxy:      { x: 35, y: 46 },
-  proyectos:  { x: 80, y: 52 },
-  contenidos: { x: 125, y: 46 },
+  proxy:      { x: 52,  y: 69 },
+  proyectos:  { x: 120, y: 78 },
+  contenidos: { x: 188, y: 69 },
   // Row 3 — children spread on pillars
-  autor:      { x: 22, y: 78 },
-  libros:     { x: 48, y: 82 },
-  ayudar:     { x: 35, y: 108 },
-  ariadna:    { x: 65, y: 82 },
-  teseo:      { x: 80, y: 96 },
-  galatea:    { x: 95, y: 82 },
-  tematicas:  { x: 125, y: 78 },
+  autor:      { x: 33,  y: 117 },
+  libros:     { x: 72,  y: 123 },
+  ayudar:     { x: 52,  y: 162 },
+  ariadna:    { x: 97,  y: 123 },
+  teseo:      { x: 120, y: 144 },
+  galatea:    { x: 143, y: 123 },
+  tematicas:  { x: 188, y: 117 },
   // Row 4 — leaves
-  contacto:   { x: 12, y: 130 },
-  linktree:   { x: 32, y: 135 },
-  polaris:    { x: 35, y: 158 },
-  arcana:     { x: 52, y: 164 },
-  grimorio:   { x: 18, y: 164 },
-  poetica:    { x: 112, y: 108 },
-  ciencia:    { x: 138, y: 108 },
-  filosofia:  { x: 125, y: 135 },
+  contacto:   { x: 18,  y: 195 },
+  linktree:   { x: 48,  y: 202 },
+  polaris:    { x: 52,  y: 237 },
+  arcana:     { x: 78,  y: 246 },
+  grimorio:   { x: 27,  y: 246 },
+  poetica:    { x: 168, y: 162 },
+  ciencia:    { x: 208, y: 162 },
+  filosofia:  { x: 188, y: 202 },
 };
 
 // Auto-computes positions for nodes absent from SEPH_POS,
@@ -1309,12 +1313,12 @@ function computeSephPos() {
     const unpositioned = (CHILDREN[pid] || []).filter(c => !SEPH_POS[c]);
     if (!unpositioned.length) continue;
 
-    const spread = (unpositioned.length - 1) * 14;
+    const spread = (unpositioned.length - 1) * 21;
     unpositioned.forEach((cid, i) => {
       if (result[cid]) return; // already computed
       result[cid] = {
-        x: Math.max(8, Math.min(152, result[pid].x - spread / 2 + i * 14)),
-        y: Math.min(170, result[pid].y + 20),
+        x: Math.max(12, Math.min(228, result[pid].x - spread / 2 + i * 21)),
+        y: Math.min(255, result[pid].y + 30),
       };
     });
   }
@@ -1398,13 +1402,14 @@ function updateSephiroth(activeId) {
     }
   });
 
-  // Update labels
+  // Update labels — only show active + ancestors
   document.querySelectorAll('#seph-nodes .seph-label').forEach(l => {
     const id = l.dataset.id;
+    l.classList.remove('label-active', 'label-path');
     if (id === activeId) {
       l.classList.add('label-active');
-    } else {
-      l.classList.remove('label-active');
+    } else if (pathSet.has(id)) {
+      l.classList.add('label-path');
     }
   });
 
