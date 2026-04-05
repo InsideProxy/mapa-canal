@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.5.1 -->
+  <!-- v0.5.2 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -454,7 +454,7 @@ const NODES = {
 };
 
 const CHILDREN = {
-  canal:      ['proxy','proyectos','contenidos'],
+  canal:      ['proxy','proyectos','contenidos','instituto'],
   instituto:  [],
   proxy:      ['autor','libros','ayudar'],
   autor:      ['contacto','linktree'],
@@ -469,9 +469,7 @@ const CHILDREN = {
 
 const PARENT = { canal: null };
 Object.entries(CHILDREN).forEach(([p, cs]) => cs.forEach(c => PARENT[c] = p));
-PARENT['instituto'] = 'canal'; // peer of canal in layout, child for navigation
-// Extra edges not in CHILDREN tree — used for visual classification only
-const EXTRA_CHILDREN = { canal: ['instituto'] };
+const EXTRA_CHILDREN = {}; // reserved for future manual edges
 
 const CONTENT = {
   instituto: {
@@ -964,16 +962,9 @@ function buildFullGraph() {
       });
     });
   });
-  // Manual edge for instituto (not in CHILDREN tree)
-  cy.add({
-    group: 'edges',
-    data: { id: 'e-canal-instituto', source: 'canal', target: 'instituto' },
-    classes: 'e-distant',
-    style: { opacity: 0 },
-  });
   const layout = cy.layout({
     name: 'breadthfirst',
-    roots: ['canal', 'instituto'],
+    roots: ['canal'],
     directed: true,
     spacingFactor: 1.1,
     padding: 50,
@@ -985,6 +976,14 @@ function buildFullGraph() {
     cy.nodes().forEach(n => {
       n.position('x', cx + (n.position('x') - cx) * 0.45);
     });
+    // Force instituto to the same Y as canal (same visual level)
+    const canalNode = cy.getElementById('canal');
+    const institutoNode = cy.getElementById('instituto');
+    if (canalNode && institutoNode) {
+      institutoNode.position('y', canalNode.position('y'));
+      // Place it to the right of canal
+      institutoNode.position('x', canalNode.position('x') + 160);
+    }
   });
   layout.run();
 }
