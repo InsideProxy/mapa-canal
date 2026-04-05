@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.5.0 -->
+  <!-- v0.5.1 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -428,7 +428,7 @@ function switchBackground(category) {
 
 const NODES = {
   canal:      { id:'canal',     label:'El Canal',              category:'root'       },
-  instituto:  { id:'instituto', label:'El Instituto',          category:'root', shape:'ellipse' },
+  instituto:  { id:'instituto', label:'Dédalus',               category:'root', shape:'ellipse' },
   proxy:      { id:'proxy',     label:'Proxy',                 category:'proxy'      },
   autor:      { id:'autor',     label:'Sobre el\nAutor',       category:'proxy'      },
   contacto:   { id:'contacto',  label:'Contacto',              category:'proxy'      },
@@ -470,12 +470,13 @@ const CHILDREN = {
 const PARENT = { canal: null };
 Object.entries(CHILDREN).forEach(([p, cs]) => cs.forEach(c => PARENT[c] = p));
 PARENT['instituto'] = 'canal'; // peer of canal in layout, child for navigation
+// Extra edges not in CHILDREN tree — used for visual classification only
+const EXTRA_CHILDREN = { canal: ['instituto'] };
 
 const CONTENT = {
   instituto: {
-    color:'#a78bfa', category:'El Canal', title:'El Instituto',
-    html:`<p><strong>El Instituto</strong> es la dimensión formativa del canal Proxy.</p>
-<p>Un espacio dedicado a la enseñanza estructurada del <strong>Realismo Cognitivo</strong>: cursos, seminarios y materiales para quienes quieren profundizar más allá del formato de divulgación habitual.</p>`
+    color:'#a78bfa', category:'El Canal', title:'Dédalus',
+    html:`<p>Dédalus es un poryecto a media plaxo de instituto privado de inestigación en ciencias cognitivas, basado en los principios de no academicismo, voluntarismo, cooperación en investigación y divulgación con objeto de crear conocimiento científico y filosófico en sus ámbitos. El insituto Dédalus pretende aunar las fuerzas de la inteligencia artificial y la mente humana para avanzar en la apasionante intersección entre filosofá, biología y sistemas de IA, para bregar en la lucha por la comprensión de la mente humana.</p>`
   },
   canal: {
     color:'#a78bfa', category:'El Canal', title:'Proxy — El Canal',
@@ -1003,7 +1004,7 @@ function navigate(nodeId, showPanel = true) {
   stopAmbient();
 
   const parentId = PARENT[nodeId];
-  const childIds = CHILDREN[nodeId] || [];
+  const childIds = (CHILDREN[nodeId] || []).concat(EXTRA_CHILDREN[nodeId] || []);
   const isFirst  = currentId === null;
 
   switchBackground(resolveCategory(nodeId));
