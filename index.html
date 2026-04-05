@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.4.8 -->
+  <!-- v0.4.9 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -428,6 +428,7 @@ function switchBackground(category) {
 
 const NODES = {
   canal:      { id:'canal',     label:'El Canal',              category:'root'       },
+  instituto:  { id:'instituto', label:'El Instituto',          category:'root', shape:'ellipse' },
   proxy:      { id:'proxy',     label:'Proxy',                 category:'proxy'      },
   autor:      { id:'autor',     label:'Sobre el\nAutor',       category:'proxy'      },
   contacto:   { id:'contacto',  label:'Contacto',              category:'proxy'      },
@@ -453,7 +454,8 @@ const NODES = {
 };
 
 const CHILDREN = {
-  canal:      ['proxy','proyectos','contenidos'],
+  canal:      ['proxy','proyectos','contenidos','instituto'],
+  instituto:  [],
   proxy:      ['autor','libros','ayudar'],
   autor:      ['contacto','linktree'],
   libros:     ['polaris','arcana','grimorio'],
@@ -469,6 +471,11 @@ const PARENT = { canal: null };
 Object.entries(CHILDREN).forEach(([p, cs]) => cs.forEach(c => PARENT[c] = p));
 
 const CONTENT = {
+  instituto: {
+    color:'#a78bfa', category:'El Canal', title:'El Instituto',
+    html:`<p><strong>El Instituto</strong> es la dimensión formativa del canal Proxy.</p>
+<p>Un espacio dedicado a la enseñanza estructurada del <strong>Realismo Cognitivo</strong>: cursos, seminarios y materiales para quienes quieren profundizar más allá del formato de divulgación habitual.</p>`
+  },
   canal: {
     color:'#a78bfa', category:'El Canal', title:'Proxy — El Canal',
     html:`<p>Bienvenido al mapa interactivo del canal <strong>Proxy</strong>.</p>
@@ -942,7 +949,7 @@ function buildFullGraph() {
       group: 'nodes',
       data: { id: n.id, label: n.label, category: n.category, type: n.type || '', image: n.image || 'none' },
       classes: 'r-distant',
-      style: { opacity: 0 },
+      style: { opacity: 0, ...(n.shape ? { shape: n.shape } : {}) },
     });
   });
   Object.entries(CHILDREN).forEach(([parent, children]) => {
@@ -1270,6 +1277,7 @@ const SEPH_COLORS = {
 const SEPH_POS = {
   // Crown — Keter
   canal:      { x: 120, y: 24 },
+  instituto:  { x: 188, y: 24 },
   // Row 2 — 3 pillars
   proxy:      { x: 52,  y: 69 },
   proyectos:  { x: 120, y: 78 },
