@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.4.6 -->
+  <!-- v0.4.7 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -224,30 +224,30 @@
 
     /* ── LEGEND ──────────────────────────────── */
     #legend {
-      position: fixed; bottom: 228px; left: 16px;
+      position: fixed; bottom: 290px; left: 16px;
       background: rgba(5,5,16,0.6);
       border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px;
-      padding: 14px 18px;
+      border-radius: 14px;
+      padding: 18px 22px;
       z-index: 100;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
     #legend h4 {
-      font-size: 11px;
+      font-size: 13px;
       letter-spacing: 2.5px;
       text-transform: uppercase;
       color: rgba(255,255,255,0.2);
-      margin-bottom: 10px;
+      margin-bottom: 14px;
       font-weight: 600;
     }
-    .li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: rgba(255,255,255,0.35); margin-bottom: 7px; font-weight: 500; }
+    .li { display: flex; align-items: center; gap: 12px; font-size: 16px; color: rgba(255,255,255,0.5); margin-bottom: 10px; font-weight: 500; }
     .li:last-child { margin-bottom: 0; }
     .ld {
-      width: 8px; height: 8px;
+      width: 12px; height: 12px;
       border-radius: 50%;
       flex-shrink: 0;
-      box-shadow: 0 0 6px currentColor;
+      box-shadow: 0 0 8px currentColor;
     }
 
     /* ── NODE COUNTER ────────────────────────── */
@@ -264,46 +264,46 @@
       position: fixed;
       bottom: 20px;
       left: 16px;
-      width: 170px;
-      height: 200px;
+      width: 240px;
+      height: 270px;
       z-index: 100;
       pointer-events: auto;
-      opacity: 0.5;
+      opacity: 0.6;
       transition: opacity 0.4s;
     }
     #sephiroth:hover { opacity: 1; }
     #sephiroth line {
-      stroke: rgba(255,255,255,0.1);
-      stroke-width: 1;
+      stroke: rgba(255,255,255,0.15);
+      stroke-width: 1.5;
       transition: stroke 0.4s, stroke-opacity 0.4s;
     }
     #sephiroth line.path-active {
-      stroke: rgba(255,255,255,0.35);
-      stroke-width: 1.5;
+      stroke: rgba(255,255,255,0.45);
+      stroke-width: 2;
     }
     #sephiroth circle {
       cursor: pointer;
       transition: r 0.3s, fill-opacity 0.3s, filter 0.3s;
     }
     #sephiroth circle:hover {
-      r: 9;
+      r: 11;
       fill-opacity: 1;
     }
     #sephiroth .seph-active {
-      r: 9;
+      r: 11;
       fill-opacity: 1;
-      filter: drop-shadow(0 0 8px currentColor);
+      filter: drop-shadow(0 0 10px currentColor);
     }
     #sephiroth .seph-label {
       font-family: 'Inter', sans-serif;
-      font-size: 8px;
-      fill: rgba(255,255,255,0.3);
+      font-size: 10px;
+      fill: rgba(255,255,255,0.4);
       text-anchor: middle;
       pointer-events: none;
       transition: fill 0.3s;
     }
     #sephiroth .seph-label.label-active {
-      fill: rgba(255,255,255,0.8);
+      fill: rgba(255,255,255,0.9);
       font-weight: 600;
     }
 
