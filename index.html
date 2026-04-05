@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.4.3 -->
+  <!-- v0.4.4 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -985,12 +985,6 @@ async function navigate(nodeId, showPanel = true) {
 
   switchBackground(resolveCategory(nodeId));
 
-  // ── Clear inline size styles only from previously active node ──
-  if (currentId) {
-    cy.getElementById(currentId).removeStyle('width height shadow-opacity shadow-blur border-opacity');
-  }
-  cy.nodes('.leaf-sel').removeStyle('width height shadow-opacity shadow-blur border-opacity');
-
   // ── Reclassify nodes ──
   cy.nodes().removeClass('r-current r-parent r-child r-distant leaf-sel');
   cy.getElementById(nodeId).addClass('r-current');
@@ -1147,86 +1141,77 @@ let animFrame = null;
 let animStart = null;
 let animRunning = false;
 
+// Index: nodeId → base position, set once per navigate
+const basePositions = {};
+
 function ambientLoop(timestamp) {
   if (!animRunning) return;
   if (!animStart) animStart = timestamp;
   const t = (timestamp - animStart) / 1000;
 
   try {
-    // Pulse: leaf-sel takes priority, otherwise r-current
-    const leaf = cy.nodes('.leaf-sel');
-    const cur = leaf.length ? leaf : cy.nodes('.r-current');
-    if (cur.length && cur.inside()) {
-      const sin18 = Math.sin(t * 1.8);
-      const isCard = cur.data('type') === 'card';
-      const styleUpdate = {
-        'shadow-opacity': Math.round((0.4 + 0.25 * sin18) * 100) / 100,
-        'shadow-blur': Math.round(28 + 14 * sin18),
-        'border-opacity': Math.round((0.3 + 0.2 * sin18) * 100) / 100,
-      };
-      if (!isCard) {
-        const baseSize = leaf.length ? 78 : 118;
-        const range = leaf.length ? 4 : 8;
-        const size = Math.round(baseSize + range * sin18);
-        styleUpdate['width'] = size;
-        styleUpdate['height'] = size;
-      }
-      cur.style(styleUpdate);
-    }
+    const allNodes = cy.nodes();
 
-    // Elastic float on all visible nodes
-    cy.nodes().forEach((node, i) => {
-      if (!node.inside()) return;
-      const basePos = node.data('_basePos');
-      if (!basePos) return;
+    allNodes.forEach(function(node, i) {
+      const id = node.id();
+      const base = basePositions[id];
+      if (!base) return;
+
       const phase = i * 1.9;
 
       if (node.hasClass('r-current')) {
-        // Current: gentle sway, already has size pulse above
-        const dx = 1.8 * Math.sin(t * 0.55 + phase);
-        const dy = 2.2 * Math.cos(t * 0.45 + phase);
-        node.position({ x: basePos.x + dx, y: basePos.y + dy });
+        // Float
+        node.position({
+          x: base.x + 1.8 * Math.sin(t * 0.55 + phase),
+          y: base.y + 2.2 * Math.cos(t * 0.45 + phase),
+        });
+        // Pulse size
+        const sin18 = Math.sin(t * 1.8);
+        const size = Math.round(118 + 8 * sin18);
+        node.style({
+          'width': size, 'height': size,
+          'shadow-opacity': Math.round((0.45 + 0.25 * sin18) * 100) / 100,
+          'shadow-blur': Math.round(30 + 14 * sin18),
+        });
+
       } else if (node.hasClass('r-child')) {
-        // Children: more lively elastic bounce
-        const dx = 3.2 * Math.sin(t * 0.72 + phase);
-        const dy = 3.8 * Math.cos(t * 0.58 + phase);
-        node.position({ x: basePos.x + dx, y: basePos.y + dy });
-        node.style('shadow-opacity', Math.round((0.35 + 0.15 * Math.sin(t * 1.2 + phase)) * 100) / 100);
+        node.position({
+          x: base.x + 3.5 * Math.sin(t * 0.72 + phase),
+          y: base.y + 4.0 * Math.cos(t * 0.58 + phase),
+        });
+        node.style('shadow-opacity', Math.round((0.3 + 0.15 * Math.sin(t * 1.2 + phase)) * 100) / 100);
+
       } else if (node.hasClass('r-parent')) {
-        // Parent: subtle drift
-        const dx = 1.5 * Math.sin(t * 0.4 + phase);
-        const dy = 1.5 * Math.cos(t * 0.35 + phase);
-        node.position({ x: basePos.x + dx, y: basePos.y + dy });
+        node.position({
+          x: base.x + 1.5 * Math.sin(t * 0.4 + phase),
+          y: base.y + 1.5 * Math.cos(t * 0.35 + phase),
+        });
+
       } else if (node.hasClass('r-distant')) {
-        // Distant: barely perceptible drift
-        const dx = 0.8 * Math.sin(t * 0.3 + phase);
-        const dy = 0.8 * Math.cos(t * 0.28 + phase);
-        node.position({ x: basePos.x + dx, y: basePos.y + dy });
+        node.position({
+          x: base.x + 0.8 * Math.sin(t * 0.28 + phase),
+          y: base.y + 0.8 * Math.cos(t * 0.24 + phase),
+        });
       }
     });
 
     // Edge glow wave
-    cy.edges('.e-down').forEach((edge, i) => {
-      if (!edge.inside()) return;
+    cy.edges('.e-down').forEach(function(edge, i) {
       const op = Math.round((0.55 + 0.2 * Math.sin(t * 1.5 + i * 1.5)) * 100) / 100;
       edge.style('opacity', op);
     });
-  } catch (e) {
-    // Node removed mid-frame, safe to ignore
-  }
+
+  } catch (e) { /* safe to ignore mid-frame removal */ }
 
   if (animRunning) animFrame = requestAnimationFrame(ambientLoop);
 }
 
-function storeBasePositions() {
-  cy.nodes().forEach(node => {
-    node.data('_basePos', { ...node.position() });
-  });
-}
-
 function startAmbient() {
   stopAmbient();
-  storeBasePositions();
+  // Snapshot current positions as base
+  cy.nodes().forEach(function(node) {
+    basePositions[node.id()] = { x: node.position('x'), y: node.position('y') };
+  });
   animStart = null;
   animRunning = true;
   animFrame = requestAnimationFrame(ambientLoop);
@@ -1234,10 +1219,9 @@ function startAmbient() {
 
 function stopAmbient() {
   animRunning = false;
-  if (animFrame) {
-    cancelAnimationFrame(animFrame);
-    animFrame = null;
-  }
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  // Reset any node that was being pulsed back to its CSS size
+  cy.nodes('.r-current').removeStyle('width height shadow-opacity shadow-blur');
 }
 
 // ════════════════════════════════════════════════════════
