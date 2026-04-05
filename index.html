@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.5.2 -->
+  <!-- v0.5.3 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -903,34 +903,6 @@ let currentId = null;
 let busy = false;
 
 // ════════════════════════════════════════════════════════
-//  POSITIONS
-// ════════════════════════════════════════════════════════
-
-function positions(parentId, nodeId, childIds) {
-  const n = childIds.length;
-  const VSTEP = 115;
-  const HSTEP = 115;
-  const pos = {};
-
-  const hasParent = !!parentId;
-  const currentY = hasParent ? -60 : (n > 0 ? -90 : 0);
-  const parentY  = currentY - VSTEP;
-  const childY   = currentY + VSTEP;
-
-  if (hasParent) pos[parentId] = { x: 0, y: parentY };
-  pos[nodeId] = { x: 0, y: currentY };
-
-  if (n > 0) {
-    const totalW = (n - 1) * HSTEP;
-    childIds.forEach((id, i) => {
-      pos[id] = { x: -totalW / 2 + i * HSTEP, y: childY };
-    });
-  }
-
-  return pos;
-}
-
-// ════════════════════════════════════════════════════════
 //  RESOLVE CATEGORY for background
 // ════════════════════════════════════════════════════════
 
@@ -1130,13 +1102,13 @@ cy.on('tap', 'node', evt => {
   const id = evt.target.id();
   const hasKids = CHILDREN[id] && CHILDREN[id].length > 0;
 
-  if (hasKids) {
-    navigate(id, true);
-  } else {
+  // Always navigate (sets r-current, illuminates node, opens panel)
+  navigate(id, true);
+
+  // If leaf node (no children), also mark it as leaf-sel for extra glow
+  if (!hasKids) {
     cy.nodes().removeClass('leaf-sel');
     evt.target.addClass('leaf-sel');
-    updateSephiroth(id);
-    openPanel(id);
   }
 });
 
@@ -1198,7 +1170,7 @@ function startAmbient() {
   animStart = null;
   animRunning = true;
   animFrame = requestAnimationFrame(ambientLoop);
-  // Start glow pulse on the currently selected node
+  // Start glow pulse on the currently selected node (after animRunning = true)
   const sel = cy.nodes('.leaf-sel').length ? cy.nodes('.leaf-sel') : cy.nodes('.r-current');
   if (sel.length) pulseNode(sel[0]);
 }
@@ -1206,8 +1178,8 @@ function startAmbient() {
 function stopAmbient() {
   animRunning = false;
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-  // Stop any Cytoscape-level animations on all nodes
-  cy.nodes().stop(true);
+  // Stop only the pulse animation on the active node, not opacity animations
+  cy.nodes('.r-current, .leaf-sel').stop(false, true);
 }
 
 // ── Selected node glow pulse via cy.animate loop ──
