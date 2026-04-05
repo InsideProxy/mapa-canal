@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.4.1 -->
+  <!-- v0.4.2 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -951,10 +951,9 @@ function buildFullGraph() {
     name: 'breadthfirst',
     roots: ['canal'],
     directed: true,
-    spacingFactor: 0.85,
-    padding: 40,
+    spacingFactor: 1.1,
+    padding: 50,
     avoidOverlap: true,
-    nodeDimensionsIncludeLabels: false,
   }).run();
 }
 
@@ -978,8 +977,11 @@ async function navigate(nodeId, showPanel = true) {
 
   switchBackground(resolveCategory(nodeId));
 
-  // ── Clear inline size styles so CSS classes take full control ──
-  cy.nodes().removeStyle('width height shadow-opacity shadow-blur border-opacity');
+  // ── Clear inline size styles only from previously active node ──
+  if (currentId) {
+    cy.getElementById(currentId).removeStyle('width height shadow-opacity shadow-blur border-opacity');
+  }
+  cy.nodes('.leaf-sel').removeStyle('width height shadow-opacity shadow-blur border-opacity');
 
   // ── Reclassify nodes ──
   cy.nodes().removeClass('r-current r-parent r-child r-distant leaf-sel');
