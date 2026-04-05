@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy — Mapa del Canal</title>
-  <!-- v0.4.4 -->
+  <!-- v0.4.5 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -969,7 +969,7 @@ function buildFullGraph() {
 //  NAVIGATE
 // ════════════════════════════════════════════════════════
 
-async function navigate(nodeId, showPanel = true) {
+function navigate(nodeId, showPanel = true) {
   if (busy) return;
   if (nodeId === currentId) {
     if (showPanel) openPanel(nodeId);
@@ -1017,34 +1017,25 @@ async function navigate(nodeId, showPanel = true) {
     cy.animate({ fit: { eles: activeEles, padding: 100 } }, { duration: 420 });
   }
 
-  // ── Animate opacity ──
-  const DUR = 420;
-  const anims = [];
-  const rCur  = cy.nodes('.r-current');
-  const rCh   = cy.nodes('.r-child');
-  const rPar  = cy.nodes('.r-parent');
-  const rDist = cy.nodes('.r-distant');
-  const eDn   = cy.edges('.e-down');
-  const eUp   = cy.edges('.e-up');
-  const eDist = cy.edges('.e-distant');
-
-  if (rCur.length)  anims.push(new Promise(r => rCur .animate({ style:{ opacity:1    } }, { duration:DUR, complete:r })));
-  if (rCh.length)   anims.push(new Promise(r => rCh  .animate({ style:{ opacity:1    } }, { duration:DUR, complete:r })));
-  if (rPar.length)  anims.push(new Promise(r => rPar .animate({ style:{ opacity:0.42 } }, { duration:DUR, complete:r })));
-  if (rDist.length) anims.push(new Promise(r => rDist.animate({ style:{ opacity:0.18 } }, { duration:DUR, complete:r })));
-  if (eDn.length)   anims.push(new Promise(r => eDn  .animate({ style:{ opacity:0.8  } }, { duration:DUR, complete:r })));
-  if (eUp.length)   anims.push(new Promise(r => eUp  .animate({ style:{ opacity:0.3  } }, { duration:DUR, complete:r })));
-  if (eDist.length) anims.push(new Promise(r => eDist.animate({ style:{ opacity:0.08 } }, { duration:DUR, complete:r })));
-
-  await Promise.all(anims);
+  // ── Animate opacity (fire-and-forget — never rely on complete callbacks) ──
+  const DUR = 380;
+  cy.nodes('.r-current').animate({ style:{ opacity:1    } }, { duration:DUR });
+  cy.nodes('.r-child')  .animate({ style:{ opacity:1    } }, { duration:DUR });
+  cy.nodes('.r-parent') .animate({ style:{ opacity:0.42 } }, { duration:DUR });
+  cy.nodes('.r-distant').animate({ style:{ opacity:0.18 } }, { duration:DUR });
+  cy.edges('.e-down')   .animate({ style:{ opacity:0.8  } }, { duration:DUR });
+  cy.edges('.e-up')     .animate({ style:{ opacity:0.3  } }, { duration:DUR });
+  cy.edges('.e-distant').animate({ style:{ opacity:0.08 } }, { duration:DUR });
 
   currentId = nodeId;
-  busy = false;
 
-  startAmbient();
-  updateTopBar(nodeId);
-  updateSephiroth(nodeId);
-  if (showPanel) openPanel(nodeId);
+  setTimeout(() => {
+    busy = false;
+    startAmbient();
+    updateTopBar(nodeId);
+    updateSephiroth(nodeId);
+    if (showPanel) openPanel(nodeId);
+  }, DUR + 20);
 }
 
 function goBack() {
