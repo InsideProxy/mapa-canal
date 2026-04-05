@@ -788,21 +788,21 @@ const cy = cytoscape({
     {
       selector: 'node.r-current',
       style: {
-        'width': 97,
-        'height': 97,
+        'width': 110,
+        'height': 110,
         'font-size': '12px',
         'border-width': 3,
         'border-color': 'rgba(255,255,255,0.35)',
-        'shadow-blur': 35,
-        'shadow-opacity': 0.6,
+        'shadow-blur': 40,
+        'shadow-opacity': 0.65,
       }
     },
     {
       selector: 'node.r-parent',
       style: {
-        'width': 58,
-        'height': 58,
-        'font-size': '8.5px',
+        'width': 48,
+        'height': 48,
+        'font-size': '8px',
         'background-opacity': 0.35,
         'color': 'rgba(255,255,255,0.5)',
         'text-outline-color': 'rgba(0,0,0,0.6)',
@@ -811,7 +811,7 @@ const cy = cytoscape({
     },
     {
       selector: 'node.r-child',
-      style: { 'width': 79, 'height': 79 }
+      style: { 'width': 54, 'height': 54, 'font-size': '8.5px' }
     },
     {
       selector: 'node.r-distant',
@@ -892,8 +892,8 @@ let busy = false;
 
 function positions(parentId, nodeId, childIds) {
   const n = childIds.length;
-  const VSTEP = 150;
-  const HSTEP = 158;
+  const VSTEP = 115;
+  const HSTEP = 115;
   const pos = {};
 
   const hasParent = !!parentId;
@@ -950,8 +950,8 @@ function buildFullGraph() {
     name: 'breadthfirst',
     roots: ['canal'],
     directed: true,
-    spacingFactor: 1.8,
-    padding: 80,
+    spacingFactor: 1.25,
+    padding: 60,
     avoidOverlap: true,
   }).run();
 }
@@ -1150,8 +1150,8 @@ function ambientLoop(timestamp) {
         'border-opacity': Math.round((0.3 + 0.2 * sin18) * 100) / 100,
       };
       if (!isCard) {
-        const baseSize = leaf.length ? 78 : 95;
-        const range = leaf.length ? 4 : 6;
+        const baseSize = leaf.length ? 78 : 108;
+        const range = leaf.length ? 4 : 7;
         const size = Math.round(baseSize + range * sin18);
         styleUpdate['width'] = size;
         styleUpdate['height'] = size;
@@ -1159,31 +1159,36 @@ function ambientLoop(timestamp) {
       cur.style(styleUpdate);
     }
 
-    // Gentle float on child nodes
-    const children = cy.nodes('.r-child');
-    children.forEach((node, i) => {
+    // Elastic float on all visible nodes
+    cy.nodes().forEach((node, i) => {
       if (!node.inside()) return;
-      const phase = i * 2.1;
-      const dx = 2.5 * Math.sin(t * 0.7 + phase);
-      const dy = 3.0 * Math.cos(t * 0.5 + phase);
       const basePos = node.data('_basePos');
-      if (basePos) {
+      if (!basePos) return;
+      const phase = i * 1.9;
+
+      if (node.hasClass('r-current')) {
+        // Current: gentle sway, already has size pulse above
+        const dx = 1.8 * Math.sin(t * 0.55 + phase);
+        const dy = 2.2 * Math.cos(t * 0.45 + phase);
+        node.position({ x: basePos.x + dx, y: basePos.y + dy });
+      } else if (node.hasClass('r-child')) {
+        // Children: more lively elastic bounce
+        const dx = 3.2 * Math.sin(t * 0.72 + phase);
+        const dy = 3.8 * Math.cos(t * 0.58 + phase);
+        node.position({ x: basePos.x + dx, y: basePos.y + dy });
+        node.style('shadow-opacity', Math.round((0.35 + 0.15 * Math.sin(t * 1.2 + phase)) * 100) / 100);
+      } else if (node.hasClass('r-parent')) {
+        // Parent: subtle drift
+        const dx = 1.5 * Math.sin(t * 0.4 + phase);
+        const dy = 1.5 * Math.cos(t * 0.35 + phase);
+        node.position({ x: basePos.x + dx, y: basePos.y + dy });
+      } else if (node.hasClass('r-distant')) {
+        // Distant: barely perceptible drift
+        const dx = 0.8 * Math.sin(t * 0.3 + phase);
+        const dy = 0.8 * Math.cos(t * 0.28 + phase);
         node.position({ x: basePos.x + dx, y: basePos.y + dy });
       }
-      node.style('shadow-opacity', Math.round((0.35 + 0.15 * Math.sin(t * 1.2 + phase)) * 100) / 100);
     });
-
-    // Parent node: very subtle drift
-    const parent = cy.nodes('.r-parent');
-    if (parent.length && parent.inside()) {
-      const basePos = parent.data('_basePos');
-      if (basePos) {
-        parent.position({
-          x: basePos.x + 1.5 * Math.sin(t * 0.4),
-          y: basePos.y + 1.5 * Math.cos(t * 0.35),
-        });
-      }
-    }
 
     // Edge glow wave
     cy.edges('.e-down').forEach((edge, i) => {
